@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>12장 AWS 엣지 아키텍처</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="12장 AWS 엣지 아키텍처"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="12장 AWS 엣지 아키텍처"/><meta name="twitter:description" content="12장 AWS 엣지 아키텍처 Route 53, CloudFront, DDoS 보호, AWS Outposts 12.1 엣지 아키텍처 개요 사용자가 클라우드 서비스를 사용할 때 실제 경험하는 품질은 단순히 백엔드 서버 성능만으로 결정되지 않음."/><meta property="og:description" content="12장 AWS 엣지 아키텍처 Route 53, CloudFront, DDoS 보호, AWS Outposts 12.1 엣지 아키텍처 개요 사용자가 클라우드 서비스를 사용할 때 실제 경험하는 품질은 단순히 백엔드 서버 성능만으로 결정되지 않음."/><meta property="og:image:alt" content="12장 AWS 엣지 아키텍처 Route 53, CloudFront, DDoS 보호, AWS Outposts 12.1 엣지 아키텍처 개요 사용자가 클라우드 서비스를 사용할 때 실제 경험하는 품질은 단순히 백엔드 서버 성능만으로 결정되지 않음."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/12장-AWS-엣지-아키텍처"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/12장-AWS-엣지-아키텍처"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="12장 AWS 엣지 아키텍처 Route 53, CloudFront, DDoS 보호, AWS Outposts 12.1 엣지 아키텍처 개요 사용자가 클라우드 서비스를 사용할 때 실제 경험하는 품질은 단순히 백엔드 서버 성능만으로 결정되지 않음."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/12장-AWS-엣지-아키텍처"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-8"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-8" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>12장 AWS 엣지 아키텍처</a></div></nav><h1 class="article-title">12장 AWS 엣지 아키텍처</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>27 min read</span></p></div></div><article class="popover-hint"><h1 id="12장-aws-엣지-아키텍처">12장 AWS 엣지 아키텍처<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12장-aws-엣지-아키텍처" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="route-53-cloudfront-ddos-보호-aws-outposts">Route 53, CloudFront, DDoS 보호, AWS Outposts<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#route-53-cloudfront-ddos-보호-aws-outposts" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<hr/>
+<h1 id="121-엣지-아키텍처-개요">12.1 엣지 아키텍처 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#121-엣지-아키텍처-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>사용자가 클라우드 서비스를 사용할 때 실제 경험하는 품질은 단순히 백엔드 서버 성능만으로 결정되지 않음.</p>
+<p>다음 요소가 함께 영향을 줌.</p>
+<ul>
+<li>사용자가 어느 위치에서 접속하는가</li>
+<li>DNS가 얼마나 빠르고 안정적으로 응답하는가</li>
+<li>정적 콘텐츠가 사용자와 얼마나 가까운 곳에서 제공되는가</li>
+<li>대규모 공격 상황에서도 서비스가 유지되는가</li>
+<li>일부 워크로드를 온프레미스에 가깝게 배치해야 하는가</li>
+</ul>
+<p>즉, 엣지 아키텍처는 <strong>클라우드 중심부가 아니라 사용자 접점</strong>에서의 성능, 가용성, 보안, 지연시간을 다루는 영역임.</p>
+<p>AWS에서 이 역할을 대표적으로 담당하는 서비스가 다음과 같음.</p>
+<ul>
+<li>Route 53</li>
+<li>CloudFront</li>
+<li>AWS Shield / WAF</li>
+<li>AWS Outposts</li>
+</ul>
+<hr/>
+<h1 id="122-엣지-서비스가-필요한-이유">12.2 엣지 서비스가 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#122-엣지-서비스가-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>클라우드에 서버를 잘 배치했다고 해도, 사용자는 항상 AWS 리전 내부에 있는 것이 아님.</p>
+<p>전 세계 다양한 위치에서 접속하며, 네트워크 경로도 일정하지 않음.</p>
+<p>이때 발생할 수 있는 문제</p>
+<ul>
+<li>DNS 응답 지연</li>
+<li>원본 서버까지 장거리 전송으로 인한 느린 응답</li>
+<li>대규모 트래픽 공격에 취약</li>
+<li>글로벌 사용자에게 동일한 성능 제공 어려움</li>
+<li>온프레미스와 유사한 위치에서 처리해야 하는 워크로드 존재</li>
+</ul>
+<p>즉, 엣지 서비스는 단순 부가 기능이 아니라 <strong>사용자 경험 최적화와 서비스 보호를 위한 핵심 계층</strong>임.</p>
+<hr/>
+<h1 id="123-aws-글로벌-인프라와-엣지">12.3 AWS 글로벌 인프라와 엣지<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#123-aws-글로벌-인프라와-엣지" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS는 리전과 AZ만 있는 것이 아니라, 전 세계에 분산된 엣지 로케이션과 네트워크 인프라를 함께 운영함.</p>
+<p>여기서 중요한 개념</p>
+<ul>
+<li>Region</li>
+<li>Availability Zone</li>
+<li>Edge Location</li>
+</ul>
+<p>앞에서 리전과 AZ는 학습했으므로, 여기서는 Edge Location의 의미가 중요함.</p>
+<h3 id="edge-location">Edge Location<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#edge-location" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자와 가까운 위치에서 콘텐츠 전달, DNS 응답, 일부 보안 기능 등을 수행하는 글로벌 접점임.</p>
+<p>대표적으로 다음 서비스들이 Edge Location을 활용함.</p>
+<ul>
+<li>CloudFront</li>
+<li>Route 53</li>
+<li>AWS Shield 일부 기능</li>
+</ul>
+<p>즉, 엣지 아키텍처는 AWS의 글로벌 분산 네트워크를 기반으로 동작함.</p>
+<hr/>
+<h1 id="124-amazon-route-53-개요">12.4 Amazon Route 53 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#124-amazon-route-53-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53은 AWS의 관리형 DNS 서비스임.</p>
+<p>도메인 이름을 IP 주소나 AWS 리소스와 연결해 주는 역할을 함.</p>
+<p>예를 들어 사용자가 브라우저에 다음을 입력한다고 가정하면</p>
+<pre><code>www.example.com
+</code></pre>
+<p>실제로는 이 이름을 어느 서버나 서비스로 보낼지 결정해야 함.</p>
+<p>그 역할을 DNS가 하며, Route 53은 AWS가 제공하는 DNS 서비스임.</p>
+<p>즉, Route 53의 핵심은 다음과 같음.</p>
+<pre><code>사용자가 기억하기 쉬운 이름을
+실제 서비스 위치와 연결한다.
+</code></pre>
+<hr/>
+<h1 id="125-dns가-중요한-이유">12.5 DNS가 중요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#125-dns가-중요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>DNS는 사용자가 서비스를 이용할 때 거의 항상 가장 먼저 거치는 단계임.</p>
+<p>따라서 느리거나 잘못 구성되면 서비스 전체 접근성에 영향을 줌.</p>
+<p>DNS가 중요한 이유</p>
+<h3 id="1-서비스-진입점">1. 서비스 진입점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-서비스-진입점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자는 IP보다 도메인 이름으로 접속함.</p>
+<h3 id="2-가용성에-영향">2. 가용성에 영향<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-가용성에-영향" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>잘못된 DNS 설정은 서비스 장애와 동일한 결과를 만들 수 있음.</p>
+<h3 id="3-트래픽-분산과-장애-조치-가능">3. 트래픽 분산과 장애 조치 가능<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-트래픽-분산과-장애-조치-가능" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>DNS 수준에서 여러 대상 중 어디로 보낼지 결정할 수 있음.</p>
+<p>즉, DNS는 단순 주소 변환이 아니라 <strong>서비스 접근 제어의 출발점</strong>임.</p>
+<hr/>
+<h1 id="126-route-53의-역할">12.6 Route 53의 역할<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#126-route-53의-역할" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53은 단순 A 레코드 저장소가 아님.</p>
+<p>다음 기능들을 제공함.</p>
+<ul>
+<li>DNS 레코드 관리</li>
+<li>도메인 등록</li>
+<li>헬스 체크</li>
+<li>라우팅 정책 기반 트래픽 분산</li>
+<li>장애 조치 라우팅</li>
+</ul>
+<p>즉, Route 53은 DNS 서비스이면서 동시에 <strong>글로벌 트래픽 제어 서비스</strong>의 성격도 가짐.</p>
+<hr/>
+<h1 id="127-hosted-zone-개념">12.7 Hosted Zone 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#127-hosted-zone-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53에서 중요한 개념 중 하나가 Hosted Zone임.</p>
+<p>Hosted Zone은 특정 도메인에 대한 DNS 레코드 집합을 관리하는 논리적 공간임.</p>
+<p>예를 들어</p>
+<pre><code>example.com
+</code></pre>
+<p>도메인을 관리한다면, 그 안에 다음과 같은 레코드가 들어갈 수 있음.</p>
+<ul>
+<li><a href="http://www.example.com" class="external">www.example.com<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a></li>
+<li>api.example.com</li>
+<li>mail.example.com</li>
+</ul>
+<p>즉, Hosted Zone은 도메인 단위 DNS 관리 영역이라고 보면 됨.</p>
+<hr/>
+<h1 id="128-dns-레코드-기본-개념">12.8 DNS 레코드 기본 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#128-dns-레코드-기본-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53에서는 다양한 레코드를 사용할 수 있음.</p>
+<p>대표적으로 다음을 이해하면 됨.</p>
+<h3 id="a-레코드">A 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#a-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>도메인 이름을 IPv4 주소에 매핑함.</p>
+<h3 id="aaaa-레코드">AAAA 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aaaa-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>도메인 이름을 IPv6 주소에 매핑함.</p>
+<h3 id="cname-레코드">CNAME 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cname-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>다른 도메인 이름으로 별칭을 연결함.</p>
+<h3 id="mx-레코드">MX 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#mx-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>메일 서버를 지정함.</p>
+<h3 id="txt-레코드">TXT 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#txt-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>도메인 검증, SPF, DKIM 등 부가 정보를 저장함.</p>
+<p>즉, DNS는 단순히 웹 접속뿐 아니라 다양한 네트워크 서비스의 주소 체계를 담당함.</p>
+<hr/>
+<h1 id="129-alias-레코드">12.9 Alias 레코드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#129-alias-레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS Route 53에서는 일반 DNS의 CNAME과 유사하지만 더 AWS 친화적인 <strong>Alias 레코드</strong>를 지원함.</p>
+<p>Alias 레코드는 다음과 같은 AWS 리소스를 대상으로 많이 사용함.</p>
+<ul>
+<li>CloudFront Distribution</li>
+<li>ALB</li>
+<li>S3 Static Website Endpoint</li>
+<li>API Gateway</li>
+</ul>
+<p>장점</p>
+<ul>
+<li>루트 도메인(apex domain)에도 활용 가능함</li>
+<li>AWS 리소스와 자연스럽게 연동됨</li>
+</ul>
+<p>즉, AWS 환경에서는 CNAME보다 Alias를 더 자주 보게 됨.</p>
+<hr/>
+<h1 id="1210-route-53-라우팅-정책">12.10 Route 53 라우팅 정책<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1210-route-53-라우팅-정책" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53의 중요한 강점 중 하나는 단순 응답이 아니라 <strong>정책 기반 라우팅</strong>임.</p>
+<p>대표적인 정책</p>
+<ul>
+<li>Simple Routing</li>
+<li>Weighted Routing</li>
+<li>Latency Routing</li>
+<li>Failover Routing</li>
+<li>Geolocation / Geoproximity Routing</li>
+<li>Multi-Value Answer Routing</li>
+</ul>
+<p>이 장에서는 개념 중심으로 이해하면 충분함.</p>
+<hr/>
+<h2 id="12101-simple-routing">12.10.1 Simple Routing<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12101-simple-routing" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>가장 기본적인 방식임.</p>
+<p>하나의 도메인을 하나의 대상에 연결하는 단순 구조임.</p>
+<p>예</p>
+<ul>
+<li><code>www.example.com</code> → 하나의 ALB</li>
+</ul>
+<hr/>
+<h2 id="12102-weighted-routing">12.10.2 Weighted Routing<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12102-weighted-routing" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>여러 대상에 가중치를 두고 트래픽을 분산함.</p>
+<p>예</p>
+<ul>
+<li>새 버전 서버 10%</li>
+<li>기존 버전 서버 90%</li>
+</ul>
+<p>즉, 점진적 전환이나 간단한 실험 구조에 활용 가능함.</p>
+<hr/>
+<h2 id="12103-latency-routing">12.10.3 Latency Routing<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12103-latency-routing" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>사용자에게 가장 낮은 지연시간이 예상되는 리전으로 트래픽을 보냄.</p>
+<p>예</p>
+<ul>
+<li>한국 사용자는 서울 리전</li>
+<li>미국 동부 사용자는 버지니아 리전</li>
+</ul>
+<p>즉, 글로벌 사용자 성능 최적화에 적합함.</p>
+<hr/>
+<h2 id="12104-failover-routing">12.10.4 Failover Routing<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12104-failover-routing" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>주 대상이 비정상일 때 보조 대상으로 넘기는 방식임.</p>
+<p>예</p>
+<ul>
+<li>Primary ALB 장애 시 Secondary ALB로 전환</li>
+</ul>
+<p>즉, DNS 기반 장애 조치 구조에 사용함.</p>
+<hr/>
+<h2 id="12105-geolocation-routing">12.10.5 Geolocation Routing<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12105-geolocation-routing" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>사용자 위치 정보에 따라 다른 대상에 응답함.</p>
+<p>예</p>
+<ul>
+<li>한국 사용자 → 한국 사이트</li>
+<li>일본 사용자 → 일본 사이트</li>
+<li>유럽 사용자 → 유럽 사이트</li>
+</ul>
+<p>즉, 국가별/지역별 사용자 경험 분리에 적합함.</p>
+<hr/>
+<h1 id="1211-route-53-health-check">12.11 Route 53 Health Check<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1211-route-53-health-check" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Route 53은 Health Check 기능과 연계해 비정상 대상에 대한 DNS 응답을 제어할 수 있음.</p>
+<p>예를 들어 웹 서버가 응답하지 않으면 DNS에서 그 대상을 제외하거나, 보조 대상으로 넘길 수 있음.</p>
+<p>즉, Route 53은 DNS 수준에서도 가용성 전략에 참여할 수 있음.</p>
+<hr/>
+<h1 id="1212-amazon-cloudfront-개요">12.12 Amazon CloudFront 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1212-amazon-cloudfront-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront는 AWS의 CDN(Content Delivery Network) 서비스임.</p>
+<p>정적 콘텐츠, 동적 콘텐츠, API 응답 일부를 전 세계 엣지 로케이션을 통해 사용자에게 더 빠르게 전달할 수 있게 해줌.</p>
+<p>즉, CloudFront의 핵심은 다음과 같음.</p>
+<pre><code>사용자와 가까운 위치에서 콘텐츠를 제공해
+지연시간을 줄이고 원본 부하를 낮춘다.
+</code></pre>
+<hr/>
+<h1 id="1213-cdn이-필요한-이유">12.13 CDN이 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1213-cdn이-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>사용자가 서울 리전에 있는 서버에 접속하는 경우를 생각해보면, 한국 사용자에게는 크게 느리지 않을 수 있음.</p>
+<p>하지만 미국이나 유럽 사용자는 훨씬 먼 경로를 거쳐야 할 수 있음.</p>
+<p>이때 문제</p>
+<ul>
+<li>정적 파일 응답 지연</li>
+<li>이미지/영상 다운로드 느림</li>
+<li>원본 서버에 요청 집중</li>
+<li>전 세계 사용자 경험 불균형</li>
+</ul>
+<p>CDN은 이런 문제를 해결하기 위해 사용자와 가까운 위치에 콘텐츠를 캐시함.</p>
+<p>즉, CDN은 성능 향상뿐 아니라 <strong>원본 서버 보호와 글로벌 사용자 경험 개선</strong>에도 중요함.</p>
+<hr/>
+<h1 id="1214-cloudfront의-기본-구조">12.14 CloudFront의 기본 구조<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1214-cloudfront의-기본-구조" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront를 이해할 때 중요한 개념</p>
+<ul>
+<li>Distribution</li>
+<li>Edge Location</li>
+<li>Origin</li>
+<li>Cache</li>
+<li>Behavior</li>
+</ul>
+<hr/>
+<h2 id="12141-distribution">12.14.1 Distribution<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12141-distribution" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudFront의 배포 단위임.</p>
+<p>어떤 원본을 대상으로 어떤 캐시 정책과 동작 정책을 적용할지 정의한 전체 구성을 의미함.</p>
+<hr/>
+<h2 id="12142-origin">12.14.2 Origin<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12142-origin" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudFront가 원본 콘텐츠를 가져오는 원천 서버 또는 스토리지임.</p>
+<p>대표 예</p>
+<ul>
+<li>S3 버킷</li>
+<li>ALB</li>
+<li>EC2 웹 서버</li>
+<li>API Gateway</li>
+</ul>
+<p>즉, CloudFront는 원본을 대체하는 것이 아니라 원본 앞단에서 콘텐츠를 캐싱하고 전달함.</p>
+<hr/>
+<h2 id="12143-edge-location">12.14.3 Edge Location<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12143-edge-location" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>사용자와 가까운 위치에서 콘텐츠를 제공하는 글로벌 접점임.</p>
+<p>CloudFront는 이 위치들에 콘텐츠를 캐싱해 둠.</p>
+<hr/>
+<h2 id="12144-cache">12.14.4 Cache<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12144-cache" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>사용자가 요청한 콘텐츠를 엣지 위치에 임시 저장해 두는 기능임.</p>
+<p>같은 요청이 다시 오면 원본까지 가지 않고 더 빠르게 응답 가능함.</p>
+<hr/>
+<h2 id="12145-behavior">12.14.5 Behavior<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12145-behavior" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>어떤 경로 요청에 어떤 Origin, 캐시 정책, 보안 정책을 적용할지를 정하는 설정임.</p>
+<p>예</p>
+<ul>
+<li><code>/images/*</code> 는 정적 콘텐츠 캐시 최적화</li>
+<li><code>/api/*</code> 는 캐시 없이 원본 전달</li>
+</ul>
+<p>즉, CloudFront는 경로별로 다르게 동작하도록 설계 가능함.</p>
+<hr/>
+<h1 id="1215-cloudfront의-장점">12.15 CloudFront의 장점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1215-cloudfront의-장점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-지연시간-감소">1. 지연시간 감소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-지연시간-감소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자 가까운 엣지에서 응답 가능함.</p>
+<h3 id="2-원본-서버-부하-감소">2. 원본 서버 부하 감소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-원본-서버-부하-감소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>캐시 적중 시 원본 요청이 줄어듦.</p>
+<h3 id="3-글로벌-서비스-품질-향상">3. 글로벌 서비스 품질 향상<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-글로벌-서비스-품질-향상" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>전 세계 사용자에게 더 균일한 성능 제공 가능함.</p>
+<h3 id="4-보안-기능-연계">4. 보안 기능 연계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-보안-기능-연계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>WAF, Shield, HTTPS, OAC/OAI 등과 결합 가능함.</p>
+<p>즉, CloudFront는 성능과 보안을 함께 강화하는 서비스임.</p>
+<hr/>
+<h1 id="1216-cloudfront와-정적-콘텐츠">12.16 CloudFront와 정적 콘텐츠<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1216-cloudfront와-정적-콘텐츠" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront는 정적 파일 전달에 특히 강함.</p>
+<p>대표 대상</p>
+<ul>
+<li>이미지</li>
+<li>CSS</li>
+<li>JavaScript</li>
+<li>HTML</li>
+<li>동영상 일부</li>
+<li>다운로드 파일</li>
+</ul>
+<p>정적 콘텐츠는 자주 변경되지 않고 반복 요청되는 경우가 많기 때문에 캐시 효율이 높음.</p>
+<p>즉, S3를 원본으로 두고 CloudFront를 앞단에 두는 구조가 매우 자주 사용됨.</p>
+<hr/>
+<h1 id="1217-cloudfront와-동적-콘텐츠">12.17 CloudFront와 동적 콘텐츠<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1217-cloudfront와-동적-콘텐츠" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront는 정적 파일뿐 아니라 동적 콘텐츠에도 일부 도움을 줄 수 있음.</p>
+<p>다만 동적 콘텐츠는 캐시 여부를 신중히 봐야 함.</p>
+<p>예</p>
+<ul>
+<li>API 응답 일부</li>
+<li>로그인 전 공용 페이지</li>
+<li>헤더/쿠키 기반 정책 제어</li>
+</ul>
+<p>즉, CloudFront는 모든 것을 무조건 캐시하는 서비스가 아니라,</p>
+<p><strong>무엇을 캐시하고 무엇은 원본으로 넘길지 정책적으로 결정하는 서비스</strong>임.</p>
+<hr/>
+<h1 id="1218-s3--cloudfront-구조">12.18 S3 + CloudFront 구조<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1218-s3--cloudfront-구조" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS에서 매우 대표적인 엣지 아키텍처 패턴 중 하나임.</p>
+<pre><code>사용자
+   │
+CloudFront
+   │
+S3 Origin
+</code></pre>
+<p>이 구조의 의미</p>
+<ul>
+<li>S3는 원본 저장소</li>
+<li>CloudFront는 글로벌 배포 계층</li>
+<li>사용자는 가까운 엣지에서 콘텐츠 수신</li>
+</ul>
+<p>이 패턴은 정적 웹사이트, 이미지 배포, 다운로드 파일 배포에서 매우 자주 사용됨.</p>
+<hr/>
+<h1 id="1219-cloudfront와-보안">12.19 CloudFront와 보안<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1219-cloudfront와-보안" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront는 단순 캐시가 아니라 보안 계층으로도 의미가 있음.</p>
+<h3 id="1-https-종료">1. HTTPS 종료<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-https-종료" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>TLS 인증서를 연결해 안전한 전송 가능</p>
+<h3 id="2-원본-보호">2. 원본 보호<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-원본-보호" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자가 원본 S3나 ALB에 직접 접근하지 않고 CloudFront만 통하게 구성 가능</p>
+<h3 id="3-aws-waf-연계">3. AWS WAF 연계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-aws-waf-연계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>웹 공격 필터링 가능</p>
+<h3 id="4-shield-연계">4. Shield 연계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-shield-연계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>DDoS 보호 강화 가능</p>
+<p>즉, CloudFront는 <strong>성능 가속기이자 보안 게이트웨이</strong> 역할도 할 수 있음.</p>
+<hr/>
+<h1 id="1220-ddos-개요">12.20 DDoS 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1220-ddos-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>DDoS는 <strong>Distributed Denial of Service</strong>의 약자이며, 대량의 트래픽을 집중시켜 정상 사용자가 서비스를 이용하지 못하게 만드는 공격 방식임.</p>
+<p>예를 들어</p>
+<ul>
+<li>대량 HTTP 요청</li>
+<li>네트워크 대역폭 소진</li>
+<li>연결 요청 폭주</li>
+</ul>
+<p>등이 발생할 수 있음.</p>
+<p>즉, DDoS는 서비스 성능 저하를 넘어 <strong>가용성 자체를 위협하는 공격</strong>임.</p>
+<hr/>
+<h1 id="1221-왜-ddos-보호가-중요한가">12.21 왜 DDoS 보호가 중요한가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1221-왜-ddos-보호가-중요한가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>운영 환경에서는 서비스가 정상 사용자뿐 아니라 악의적 대량 요청에도 견딜 수 있어야 함.</p>
+<p>DDoS 보호가 중요한 이유</p>
+<h3 id="1-가용성-유지">1. 가용성 유지<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-가용성-유지" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>서비스가 멈추면 비즈니스 영향이 큼.</p>
+<h3 id="2-네트워크-자원-보호">2. 네트워크 자원 보호<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-네트워크-자원-보호" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>트래픽 폭주로 대역폭이 고갈될 수 있음.</p>
+<h3 id="3-원본-인프라-보호">3. 원본 인프라 보호<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-원본-인프라-보호" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>백엔드 서버까지 공격이 도달하면 장애가 확대될 수 있음.</p>
+<p>즉, DDoS 보호는 보안의 일부이면서 동시에 <strong>고가용성 전략의 일부</strong>임.</p>
+<hr/>
+<h1 id="1222-aws-shield-개요">12.22 AWS Shield 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1222-aws-shield-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS Shield는 AWS에서 제공하는 관리형 DDoS 보호 서비스임.</p>
+<p>종류</p>
+<ul>
+<li>Shield Standard</li>
+<li>Shield Advanced</li>
+</ul>
+<hr/>
+<h2 id="12221-shield-standard">12.22.1 Shield Standard<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12221-shield-standard" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>기본적으로 AWS 고객에게 제공되는 수준의 DDoS 보호임.</p>
+<p>대표적으로 다음 서비스와 연계됨.</p>
+<ul>
+<li>CloudFront</li>
+<li>Route 53</li>
+<li>Global Accelerator</li>
+<li>ELB 일부</li>
+</ul>
+<p>즉, 기본적인 대규모 네트워크/전송 계층 공격에 대한 방어를 자동으로 제공함.</p>
+<hr/>
+<h2 id="12222-shield-advanced">12.22.2 Shield Advanced<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12222-shield-advanced" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>보다 강화된 보호, 가시성, 지원 체계를 제공하는 상위 옵션임.</p>
+<p>대규모 중요 서비스에서 고려할 수 있음.</p>
+<p>즉, Shield Advanced는 기본 보호를 넘어 <strong>고급 운영/보호 기능</strong>에 초점을 둠.</p>
+<hr/>
+<h1 id="1223-aws-waf-개요">12.23 AWS WAF 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1223-aws-waf-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>WAF는 <strong>Web Application Firewall</strong>임.</p>
+<p>L7, 즉 애플리케이션 계층에서 HTTP/HTTPS 요청을 검사하고 필터링하는 보안 서비스임.</p>
+<p>대표적으로 다음 공격 방어에 유용함.</p>
+<ul>
+<li>SQL Injection</li>
+<li>XSS</li>
+<li>비정상 봇 요청</li>
+<li>특정 패턴 요청 차단</li>
+<li>국가/IP 기반 차단</li>
+<li>요청 빈도 제한</li>
+</ul>
+<p>즉, Shield가 대규모 트래픽 공격 보호에 가깝다면, WAF는 <strong>웹 요청 내용 자체를 제어하는 서비스</strong>임.</p>
+<hr/>
+<h1 id="1224-shield와-waf-차이">12.24 Shield와 WAF 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1224-shield와-waf-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>Shield</th><th>WAF</th></tr></thead><tbody><tr><td>주 보호 대상</td><td>DDoS 대규모 공격</td><td>웹 요청 패턴 공격</td></tr><tr><td>계층</td><td>주로 네트워크/전송 계층</td><td>애플리케이션 계층</td></tr><tr><td>대표 대상</td><td>트래픽 폭주</td><td>SQLi, XSS, 봇, 비정상 요청</td></tr></tbody></table></div>
+<p>즉,</p>
+<ul>
+<li><strong>대량 트래픽 보호</strong>는 Shield</li>
+<li><strong>웹 요청 필터링</strong>은 WAF</li>
+</ul>
+<p>라고 보면 됨.</p>
+<hr/>
+<h1 id="1225-cloudfront--shield--waf-조합">12.25 CloudFront + Shield + WAF 조합<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1225-cloudfront--shield--waf-조합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>엣지 보안 아키텍처에서 매우 중요한 조합임.</p>
+<pre><code>사용자
+   │
+CloudFront
+   ├ Shield
+   └ WAF
+   │
+Origin (S3 / ALB / API Gateway)
+</code></pre>
+<p>이 구조의 의미</p>
+<ul>
+<li>CloudFront : 글로벌 진입점</li>
+<li>Shield : 대규모 공격 완충</li>
+<li>WAF : 악성 웹 요청 필터링</li>
+<li>Origin : 실제 백엔드</li>
+</ul>
+<p>즉, 원본 서버를 인터넷에 직접 노출하기보다,</p>
+<p>엣지 계층에서 성능과 보안을 함께 처리하는 구조임.</p>
+<hr/>
+<h1 id="1226-aws-outposts-개요">12.26 AWS Outposts 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1226-aws-outposts-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS Outposts는 AWS 인프라와 서비스를 온프레미스 또는 고객 사이트에 가까운 위치에 확장해 배치할 수 있게 하는 서비스임.</p>
+<p>즉, Outposts는 다음과 같은 개념임.</p>
+<pre><code>AWS의 하드웨어와 운영 모델을
+고객의 데이터센터나 현장으로 확장한다.
+</code></pre>
+<p>이는 단순 VPN 연결과는 다른 개념임.</p>
+<p>온프레미스에 AWS와 유사한 실행 환경 자체를 가져오는 방식에 가까움.</p>
+<hr/>
+<h1 id="1227-outposts가-필요한-이유">12.27 Outposts가 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1227-outposts가-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>다음과 같은 상황에서는 모든 워크로드를 리전에만 두기 어려울 수 있음.</p>
+<h3 id="1-초저지연-요구">1. 초저지연 요구<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-초저지연-요구" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>공장, 병원, 통신, 실시간 장비 제어 등에서 현장 가까운 위치 처리가 필요할 수 있음.</p>
+<h3 id="2-데이터-지역성-요구">2. 데이터 지역성 요구<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-데이터-지역성-요구" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>특정 데이터가 현장에 가까이 있어야 하는 요구가 있을 수 있음.</p>
+<h3 id="3-하이브리드-운영">3. 하이브리드 운영<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-하이브리드-운영" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>온프레미스 시스템과 매우 밀접하게 연결된 워크로드가 존재할 수 있음.</p>
+<p>즉, Outposts는 클라우드를 쓰되 <strong>리전 바깥 현장 가까이에서 AWS 운영 모델을 유지하고 싶을 때</strong> 의미가 있음.</p>
+<hr/>
+<h1 id="1228-outposts의-특징">12.28 Outposts의 특징<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1228-outposts의-특징" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-aws-일관된-운영-모델">1. AWS 일관된 운영 모델<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-aws-일관된-운영-모델" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>온프레미스 위치에서도 AWS 서비스 방식과 유사한 운영 가능</p>
+<h3 id="2-하이브리드-환경-적합">2. 하이브리드 환경 적합<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-하이브리드-환경-적합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>온프레미스와 클라우드를 자연스럽게 연결 가능</p>
+<h3 id="3-저지연-처리">3. 저지연 처리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-저지연-처리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>현장 가까운 위치 처리 가능</p>
+<p>즉, Outposts는 “온프레미스냐 클라우드냐”의 이분법보다</p>
+<p><strong>클라우드 운영 모델의 확장</strong>이라는 관점에서 이해하는 것이 좋음.</p>
+<hr/>
+<h1 id="1229-route-53-cloudfront-outposts의-관점-차이">12.29 Route 53, CloudFront, Outposts의 관점 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1229-route-53-cloudfront-outposts의-관점-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이 장의 서비스들은 모두 “사용자와 가까운 쪽”과 관련 있지만 역할이 다름.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>서비스</th><th>핵심 역할</th></tr></thead><tbody><tr><td>Route 53</td><td>사용자를 올바른 서비스 진입점으로 안내</td></tr><tr><td>CloudFront</td><td>콘텐츠를 사용자 가까이에서 전달</td></tr><tr><td>Shield / WAF</td><td>사용자 접점에서 공격 방어</td></tr><tr><td>Outposts</td><td>AWS 실행 환경을 사용자/현장 가까이에 확장</td></tr></tbody></table></div>
+<p>즉,</p>
+<ul>
+<li><strong>접속 경로 결정</strong>은 Route 53</li>
+<li><strong>콘텐츠 전달 가속</strong>은 CloudFront</li>
+<li><strong>접점 보안 강화</strong>는 Shield/WAF</li>
+<li><strong>현장 인프라 확장</strong>은 Outposts</li>
+</ul>
+<p>라고 보면 됨.</p>
+<hr/>
+<h1 id="1230-글로벌-아키텍처-관점의-의미">12.30 글로벌 아키텍처 관점의 의미<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1230-글로벌-아키텍처-관점의-의미" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>엣지 서비스는 글로벌 아키텍처와 매우 강하게 연결됨.</p>
+<p>예를 들어 글로벌 서비스에서는 다음 구조를 자주 고려함.</p>
+<ul>
+<li>Route 53으로 지역별 사용자 분산</li>
+<li>CloudFront로 글로벌 콘텐츠 가속</li>
+<li>WAF/Shield로 전 세계 트래픽 보호</li>
+<li>다중 리전 원본 구조 설계</li>
+<li>장애 시 DNS 기반 페일오버</li>
+</ul>
+<p>즉, 엣지 서비스는 글로벌 트래픽과 멀티 리전 아키텍처의 시작점이 됨.</p>
+<hr/>
+<h1 id="1231-멀티-티어-아키텍처와의-연결">12.31 멀티 티어 아키텍처와의 연결<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1231-멀티-티어-아키텍처와의-연결" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>앞에서 만든 멀티 티어 구조를 엣지 관점으로 확장하면 다음과 같음.</p>
+<pre><code>사용자
+   │
+Route 53
+   │
+CloudFront
+   ├ Shield / WAF
+   │
+ALB 또는 S3 Origin
+   │
+Web / App / Data Tier
+</code></pre>
+<p>이 구조의 의미</p>
+<ul>
+<li>Route 53 : 도메인 진입점</li>
+<li>CloudFront : 글로벌 가속 및 캐싱</li>
+<li>Shield/WAF : 엣지 보안</li>
+<li>ALB/S3 : 원본</li>
+<li>Web/App/Data : 실제 백엔드</li>
+</ul>
+<p>즉, 엣지 계층은 기존 아키텍처 앞단에 붙어 사용자 경험과 보안을 강화함.</p>
+<hr/>
+<h1 id="1232-운영-관점의-설계-포인트">12.32 운영 관점의 설계 포인트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1232-운영-관점의-설계-포인트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-원본을-직접-노출하지-않는-구조가-유리함">1. 원본을 직접 노출하지 않는 구조가 유리함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-원본을-직접-노출하지-않는-구조가-유리함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>CloudFront 앞단 구조로 원본 보호가 쉬워짐.</p>
+<h3 id="2-dns는-단순-이름-매핑이-아님">2. DNS는 단순 이름 매핑이 아님<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-dns는-단순-이름-매핑이-아님" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>장애 조치, 지연시간 최적화, 글로벌 분산까지 고려해야 함.</p>
+<h3 id="3-캐시-정책이-중요함">3. 캐시 정책이 중요함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-캐시-정책이-중요함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>무조건 캐시가 아니라, 어떤 경로를 얼마나 캐시할지 정책이 필요함.</p>
+<h3 id="4-보안은-엣지에서-선제적으로-처리하는-것이-유리함">4. 보안은 엣지에서 선제적으로 처리하는 것이 유리함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-보안은-엣지에서-선제적으로-처리하는-것이-유리함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>공격이 원본까지 가기 전에 막는 것이 좋음.</p>
+<h3 id="5-하이브리드-요구가-있으면-outposts-같은-선택지도-봐야-함">5. 하이브리드 요구가 있으면 Outposts 같은 선택지도 봐야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-하이브리드-요구가-있으면-outposts-같은-선택지도-봐야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>모든 것을 리전 중심으로만 볼 수 없는 경우가 있음.</p>
+<hr/>
+<h1 id="1233-서비스-역할-한-번에-정리">12.33 서비스 역할 한 번에 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1233-서비스-역할-한-번에-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="route-53">Route 53<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#route-53" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>도메인 이름을 서비스 진입점과 연결하고, 정책 기반 라우팅을 수행한다.</p>
+<h2 id="cloudfront">CloudFront<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cloudfront" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>콘텐츠를 엣지 로케이션에 캐시해 사용자 가까이에서 빠르게 전달한다.</p>
+<h2 id="aws-shield">AWS Shield<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aws-shield" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>DDoS 공격으로부터 서비스를 보호한다.</p>
+<h2 id="aws-waf">AWS WAF<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aws-waf" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>웹 요청을 검사해 애플리케이션 계층 공격을 차단한다.</p>
+<h2 id="aws-outposts">AWS Outposts<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aws-outposts" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS 인프라와 운영 모델을 온프레미스/현장으로 확장한다.</p>
+<hr/>
+<h1 id="1234-장-요약">12.34 장 요약<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1234-장-요약" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이번 장에서 학습한 핵심 내용</p>
+<ul>
+<li>엣지 아키텍처가 필요한 이유</li>
+<li>Route 53의 개념과 DNS의 의미</li>
+<li>Hosted Zone, Alias, 라우팅 정책</li>
+<li>Health Check와 장애 조치 라우팅</li>
+<li>CloudFront의 개념과 CDN 필요성</li>
+<li>Origin, Cache, Distribution, Behavior 개념</li>
+<li>DDoS 보호와 Shield의 역할</li>
+<li>WAF와 Shield의 차이</li>
+<li>CloudFront + Shield + WAF 조합</li>
+<li>Outposts의 개념과 하이브리드 의미</li>
+<li>멀티 티어 구조 앞단의 엣지 계층 역할</li>
+</ul>
+<hr/>
+<h1 id="1235-한-줄-정리">12.35 한 줄 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1235-한-줄-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<pre><code>Route 53은 사용자를 올바른 서비스로 안내한다.
+CloudFront는 콘텐츠를 사용자 가까이에서 전달한다.
+Shield와 WAF는 엣지에서 서비스를 보호한다.
+Outposts는 AWS 운영 모델을 현장 가까이로 확장한다.
+</code></pre></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-6" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#12장-aws-엣지-아키텍처" data-for="12장-aws-엣지-아키텍처">12장 AWS 엣지 아키텍처</a></li><li class="depth-1"><a href="#route-53-cloudfront-ddos-보호-aws-outposts" data-for="route-53-cloudfront-ddos-보호-aws-outposts">Route 53, CloudFront, DDoS 보호, AWS Outposts</a></li><li class="depth-0"><a href="#121-엣지-아키텍처-개요" data-for="121-엣지-아키텍처-개요">12.1 엣지 아키텍처 개요</a></li><li class="depth-0"><a href="#122-엣지-서비스가-필요한-이유" data-for="122-엣지-서비스가-필요한-이유">12.2 엣지 서비스가 필요한 이유</a></li><li class="depth-0"><a href="#123-aws-글로벌-인프라와-엣지" data-for="123-aws-글로벌-인프라와-엣지">12.3 AWS 글로벌 인프라와 엣지</a></li><li class="depth-2"><a href="#edge-location" data-for="edge-location">Edge Location</a></li><li class="depth-0"><a href="#124-amazon-route-53-개요" data-for="124-amazon-route-53-개요">12.4 Amazon Route 53 개요</a></li><li class="depth-0"><a href="#125-dns가-중요한-이유" data-for="125-dns가-중요한-이유">12.5 DNS가 중요한 이유</a></li><li class="depth-2"><a href="#1-서비스-진입점" data-for="1-서비스-진입점">1. 서비스 진입점</a></li><li class="depth-2"><a href="#2-가용성에-영향" data-for="2-가용성에-영향">2. 가용성에 영향</a></li><li class="depth-2"><a href="#3-트래픽-분산과-장애-조치-가능" data-for="3-트래픽-분산과-장애-조치-가능">3. 트래픽 분산과 장애 조치 가능</a></li><li class="depth-0"><a href="#126-route-53의-역할" data-for="126-route-53의-역할">12.6 Route 53의 역할</a></li><li class="depth-0"><a href="#127-hosted-zone-개념" data-for="127-hosted-zone-개념">12.7 Hosted Zone 개념</a></li><li class="depth-0"><a href="#128-dns-레코드-기본-개념" data-for="128-dns-레코드-기본-개념">12.8 DNS 레코드 기본 개념</a></li><li class="depth-2"><a href="#a-레코드" data-for="a-레코드">A 레코드</a></li><li class="depth-2"><a href="#aaaa-레코드" data-for="aaaa-레코드">AAAA 레코드</a></li><li class="depth-2"><a href="#cname-레코드" data-for="cname-레코드">CNAME 레코드</a></li><li class="depth-2"><a href="#mx-레코드" data-for="mx-레코드">MX 레코드</a></li><li class="depth-2"><a href="#txt-레코드" data-for="txt-레코드">TXT 레코드</a></li><li class="depth-0"><a href="#129-alias-레코드" data-for="129-alias-레코드">12.9 Alias 레코드</a></li><li class="depth-0"><a href="#1210-route-53-라우팅-정책" data-for="1210-route-53-라우팅-정책">12.10 Route 53 라우팅 정책</a></li><li class="depth-1"><a href="#12101-simple-routing" data-for="12101-simple-routing">12.10.1 Simple Routing</a></li><li class="depth-1"><a href="#12102-weighted-routing" data-for="12102-weighted-routing">12.10.2 Weighted Routing</a></li><li class="depth-1"><a href="#12103-latency-routing" data-for="12103-latency-routing">12.10.3 Latency Routing</a></li><li class="depth-1"><a href="#12104-failover-routing" data-for="12104-failover-routing">12.10.4 Failover Routing</a></li><li class="depth-1"><a href="#12105-geolocation-routing" data-for="12105-geolocation-routing">12.10.5 Geolocation Routing</a></li><li class="depth-0"><a href="#1211-route-53-health-check" data-for="1211-route-53-health-check">12.11 Route 53 Health Check</a></li><li class="depth-0"><a href="#1212-amazon-cloudfront-개요" data-for="1212-amazon-cloudfront-개요">12.12 Amazon CloudFront 개요</a></li><li class="depth-0"><a href="#1213-cdn이-필요한-이유" data-for="1213-cdn이-필요한-이유">12.13 CDN이 필요한 이유</a></li><li class="depth-0"><a href="#1214-cloudfront의-기본-구조" data-for="1214-cloudfront의-기본-구조">12.14 CloudFront의 기본 구조</a></li><li class="depth-1"><a href="#12141-distribution" data-for="12141-distribution">12.14.1 Distribution</a></li><li class="depth-1"><a href="#12142-origin" data-for="12142-origin">12.14.2 Origin</a></li><li class="depth-1"><a href="#12143-edge-location" data-for="12143-edge-location">12.14.3 Edge Location</a></li><li class="depth-1"><a href="#12144-cache" data-for="12144-cache">12.14.4 Cache</a></li><li class="depth-1"><a href="#12145-behavior" data-for="12145-behavior">12.14.5 Behavior</a></li><li class="depth-0"><a href="#1215-cloudfront의-장점" data-for="1215-cloudfront의-장점">12.15 CloudFront의 장점</a></li><li class="depth-2"><a href="#1-지연시간-감소" data-for="1-지연시간-감소">1. 지연시간 감소</a></li><li class="depth-2"><a href="#2-원본-서버-부하-감소" data-for="2-원본-서버-부하-감소">2. 원본 서버 부하 감소</a></li><li class="depth-2"><a href="#3-글로벌-서비스-품질-향상" data-for="3-글로벌-서비스-품질-향상">3. 글로벌 서비스 품질 향상</a></li><li class="depth-2"><a href="#4-보안-기능-연계" data-for="4-보안-기능-연계">4. 보안 기능 연계</a></li><li class="depth-0"><a href="#1216-cloudfront와-정적-콘텐츠" data-for="1216-cloudfront와-정적-콘텐츠">12.16 CloudFront와 정적 콘텐츠</a></li><li class="depth-0"><a href="#1217-cloudfront와-동적-콘텐츠" data-for="1217-cloudfront와-동적-콘텐츠">12.17 CloudFront와 동적 콘텐츠</a></li><li class="depth-0"><a href="#1218-s3--cloudfront-구조" data-for="1218-s3--cloudfront-구조">12.18 S3 + CloudFront 구조</a></li><li class="depth-0"><a href="#1219-cloudfront와-보안" data-for="1219-cloudfront와-보안">12.19 CloudFront와 보안</a></li><li class="depth-2"><a href="#1-https-종료" data-for="1-https-종료">1. HTTPS 종료</a></li><li class="depth-2"><a href="#2-원본-보호" data-for="2-원본-보호">2. 원본 보호</a></li><li class="depth-2"><a href="#3-aws-waf-연계" data-for="3-aws-waf-연계">3. AWS WAF 연계</a></li><li class="depth-2"><a href="#4-shield-연계" data-for="4-shield-연계">4. Shield 연계</a></li><li class="depth-0"><a href="#1220-ddos-개요" data-for="1220-ddos-개요">12.20 DDoS 개요</a></li><li class="depth-0"><a href="#1221-왜-ddos-보호가-중요한가" data-for="1221-왜-ddos-보호가-중요한가">12.21 왜 DDoS 보호가 중요한가</a></li><li class="depth-2"><a href="#1-가용성-유지" data-for="1-가용성-유지">1. 가용성 유지</a></li><li class="depth-2"><a href="#2-네트워크-자원-보호" data-for="2-네트워크-자원-보호">2. 네트워크 자원 보호</a></li><li class="depth-2"><a href="#3-원본-인프라-보호" data-for="3-원본-인프라-보호">3. 원본 인프라 보호</a></li><li class="depth-0"><a href="#1222-aws-shield-개요" data-for="1222-aws-shield-개요">12.22 AWS Shield 개요</a></li><li class="depth-1"><a href="#12221-shield-standard" data-for="12221-shield-standard">12.22.1 Shield Standard</a></li><li class="depth-1"><a href="#12222-shield-advanced" data-for="12222-shield-advanced">12.22.2 Shield Advanced</a></li><li class="depth-0"><a href="#1223-aws-waf-개요" data-for="1223-aws-waf-개요">12.23 AWS WAF 개요</a></li><li class="depth-0"><a href="#1224-shield와-waf-차이" data-for="1224-shield와-waf-차이">12.24 Shield와 WAF 차이</a></li><li class="depth-0"><a href="#1225-cloudfront--shield--waf-조합" data-for="1225-cloudfront--shield--waf-조합">12.25 CloudFront + Shield + WAF 조합</a></li><li class="depth-0"><a href="#1226-aws-outposts-개요" data-for="1226-aws-outposts-개요">12.26 AWS Outposts 개요</a></li><li class="depth-0"><a href="#1227-outposts가-필요한-이유" data-for="1227-outposts가-필요한-이유">12.27 Outposts가 필요한 이유</a></li><li class="depth-2"><a href="#1-초저지연-요구" data-for="1-초저지연-요구">1. 초저지연 요구</a></li><li class="depth-2"><a href="#2-데이터-지역성-요구" data-for="2-데이터-지역성-요구">2. 데이터 지역성 요구</a></li><li class="depth-2"><a href="#3-하이브리드-운영" data-for="3-하이브리드-운영">3. 하이브리드 운영</a></li><li class="depth-0"><a href="#1228-outposts의-특징" data-for="1228-outposts의-특징">12.28 Outposts의 특징</a></li><li class="depth-2"><a href="#1-aws-일관된-운영-모델" data-for="1-aws-일관된-운영-모델">1. AWS 일관된 운영 모델</a></li><li class="depth-2"><a href="#2-하이브리드-환경-적합" data-for="2-하이브리드-환경-적합">2. 하이브리드 환경 적합</a></li><li class="depth-2"><a href="#3-저지연-처리" data-for="3-저지연-처리">3. 저지연 처리</a></li><li class="depth-0"><a href="#1229-route-53-cloudfront-outposts의-관점-차이" data-for="1229-route-53-cloudfront-outposts의-관점-차이">12.29 Route 53, CloudFront, Outposts의 관점 차이</a></li><li class="depth-0"><a href="#1230-글로벌-아키텍처-관점의-의미" data-for="1230-글로벌-아키텍처-관점의-의미">12.30 글로벌 아키텍처 관점의 의미</a></li><li class="depth-0"><a href="#1231-멀티-티어-아키텍처와의-연결" data-for="1231-멀티-티어-아키텍처와의-연결">12.31 멀티 티어 아키텍처와의 연결</a></li><li class="depth-0"><a href="#1232-운영-관점의-설계-포인트" data-for="1232-운영-관점의-설계-포인트">12.32 운영 관점의 설계 포인트</a></li><li class="depth-2"><a href="#1-원본을-직접-노출하지-않는-구조가-유리함" data-for="1-원본을-직접-노출하지-않는-구조가-유리함">1. 원본을 직접 노출하지 않는 구조가 유리함</a></li><li class="depth-2"><a href="#2-dns는-단순-이름-매핑이-아님" data-for="2-dns는-단순-이름-매핑이-아님">2. DNS는 단순 이름 매핑이 아님</a></li><li class="depth-2"><a href="#3-캐시-정책이-중요함" data-for="3-캐시-정책이-중요함">3. 캐시 정책이 중요함</a></li><li class="depth-2"><a href="#4-보안은-엣지에서-선제적으로-처리하는-것이-유리함" data-for="4-보안은-엣지에서-선제적으로-처리하는-것이-유리함">4. 보안은 엣지에서 선제적으로 처리하는 것이 유리함</a></li><li class="depth-2"><a href="#5-하이브리드-요구가-있으면-outposts-같은-선택지도-봐야-함" data-for="5-하이브리드-요구가-있으면-outposts-같은-선택지도-봐야-함">5. 하이브리드 요구가 있으면 Outposts 같은 선택지도 봐야 함</a></li><li class="depth-0"><a href="#1233-서비스-역할-한-번에-정리" data-for="1233-서비스-역할-한-번에-정리">12.33 서비스 역할 한 번에 정리</a></li><li class="depth-1"><a href="#route-53" data-for="route-53">Route 53</a></li><li class="depth-1"><a href="#cloudfront" data-for="cloudfront">CloudFront</a></li><li class="depth-1"><a href="#aws-shield" data-for="aws-shield">AWS Shield</a></li><li class="depth-1"><a href="#aws-waf" data-for="aws-waf">AWS WAF</a></li><li class="depth-1"><a href="#aws-outposts" data-for="aws-outposts">AWS Outposts</a></li><li class="depth-0"><a href="#1234-장-요약" data-for="1234-장-요약">12.34 장 요약</a></li><li class="depth-0"><a href="#1235-한-줄-정리" data-for="1235-한-줄-정리">12.35 한 줄 정리</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)"/><meta name="twitter:description" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache) 6.1 데이터베이스 아키텍처 개요 애플리케이션을 구성할 때 데이터 저장소는 매우 중요한 계층임."/><meta property="og:description" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache) 6.1 데이터베이스 아키텍처 개요 애플리케이션을 구성할 때 데이터 저장소는 매우 중요한 계층임."/><meta property="og:image:alt" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache) 6.1 데이터베이스 아키텍처 개요 애플리케이션을 구성할 때 데이터 저장소는 매우 중요한 계층임."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/6장-AWS-데이터베이스-아키텍처-(RDS,-DynamoDB,-ElastiCache)"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/6장-AWS-데이터베이스-아키텍처-(RDS,-DynamoDB,-ElastiCache)"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache) 6.1 데이터베이스 아키텍처 개요 애플리케이션을 구성할 때 데이터 저장소는 매우 중요한 계층임."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/6장-AWS-데이터베이스-아키텍처-(RDS,-DynamoDB,-ElastiCache)"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-36"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-36" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)</a></div></nav><h1 class="article-title">6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>24 min read</span></p></div></div><article class="popover-hint"><h1 id="6장-aws-데이터베이스-아키텍처-rds-dynamodb-elasticache">6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6장-aws-데이터베이스-아키텍처-rds-dynamodb-elasticache" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h1 id="61-데이터베이스-아키텍처-개요">6.1 데이터베이스 아키텍처 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#61-데이터베이스-아키텍처-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>애플리케이션을 구성할 때 데이터 저장소는 매우 중요한 계층임.</p>
+<p>웹 서버나 애플리케이션 서버는 요청을 처리하는 역할을 담당하지만, 실제 서비스의 핵심 데이터는 결국 데이터베이스에 저장됨.</p>
+<p>예를 들어</p>
+<ul>
+<li>회원 정보 저장</li>
+<li>주문 정보 저장</li>
+<li>게시글 저장</li>
+<li>세션 정보 저장</li>
+<li>캐시 데이터 저장</li>
+<li>로그성 데이터 저장</li>
+</ul>
+<p>이처럼 같은 “데이터 저장”이라도 데이터의 성격이 서로 다름.</p>
+<p>따라서 모든 데이터를 하나의 데이터베이스에 넣는 것이 아니라, <strong>데이터 특성에 맞는 저장소를 선택해야 함.</strong></p>
+<p>AWS에서 대표적인 데이터베이스 관련 서비스</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>서비스</th><th>유형</th><th>설명</th></tr></thead><tbody><tr><td>Amazon RDS</td><td>관계형 데이터베이스</td><td>관리형 RDBMS</td></tr><tr><td>Amazon Aurora</td><td>관계형 데이터베이스</td><td>AWS 최적화 관계형 DB</td></tr><tr><td>Amazon DynamoDB</td><td>NoSQL</td><td>키-값/문서 기반 DB</td></tr><tr><td>Amazon ElastiCache</td><td>캐시</td><td>Redis, Memcached</td></tr><tr><td>Amazon Redshift</td><td>데이터 웨어하우스</td><td>분석용</td></tr><tr><td>Amazon DocumentDB</td><td>문서형 DB</td><td>MongoDB 호환</td></tr></tbody></table></div>
+<p>이 장에서는 ARC 커리큘럼 기준으로 다음 3가지를 중심으로 학습함.</p>
+<ul>
+<li>RDS</li>
+<li>DynamoDB</li>
+<li>ElastiCache</li>
+</ul>
+<hr/>
+<h1 id="62-데이터베이스-유형-구분">6.2 데이터베이스 유형 구분<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#62-데이터베이스-유형-구분" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>데이터베이스를 설계할 때 먼저 해야 하는 일은 “어떤 데이터베이스를 쓸지”를 정하는 것임.</p>
+<p>대표적인 분류</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>유형</th><th>설명</th><th>예시 서비스</th></tr></thead><tbody><tr><td>관계형 데이터베이스</td><td>테이블 구조, SQL 사용</td><td>RDS, Aurora</td></tr><tr><td>NoSQL 데이터베이스</td><td>유연한 구조, 대규모 확장</td><td>DynamoDB</td></tr><tr><td>캐시 저장소</td><td>빠른 응답을 위한 메모리 저장소</td><td>ElastiCache</td></tr></tbody></table></div>
+<hr/>
+<h2 id="621-관계형-데이터베이스">6.2.1 관계형 데이터베이스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#621-관계형-데이터베이스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>관계형 데이터베이스는 데이터를 <strong>테이블 구조</strong>로 저장함.</p>
+<p>예</p>
+<ul>
+<li>users 테이블</li>
+<li>orders 테이블</li>
+<li>products 테이블</li>
+</ul>
+<p>특징</p>
+<ul>
+<li>행(Row), 열(Column) 구조</li>
+<li>SQL 사용</li>
+<li>정합성이 중요함</li>
+<li>트랜잭션 처리 가능</li>
+<li>JOIN 가능</li>
+</ul>
+<p>적합한 예</p>
+<ul>
+<li>쇼핑몰 주문 시스템</li>
+<li>회원 관리 시스템</li>
+<li>ERP</li>
+<li>게시판 서비스</li>
+</ul>
+<hr/>
+<h2 id="622-nosql-데이터베이스">6.2.2 NoSQL 데이터베이스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#622-nosql-데이터베이스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>NoSQL은 관계형 구조를 사용하지 않는 데이터베이스를 의미함.</p>
+<p>DynamoDB는 AWS의 대표적인 NoSQL 서비스임.</p>
+<p>특징</p>
+<ul>
+<li>매우 빠른 확장성</li>
+<li>유연한 데이터 구조</li>
+<li>대량 요청 처리에 강함</li>
+<li>단순한 키 기반 조회에 적합함</li>
+</ul>
+<p>적합한 예</p>
+<ul>
+<li>사용자 세션 저장</li>
+<li>대규모 클릭 데이터 저장</li>
+<li>게임 랭킹 데이터</li>
+<li>IoT 데이터</li>
+<li>짧은 응답 시간이 중요한 서비스</li>
+</ul>
+<hr/>
+<h2 id="623-캐시-저장소">6.2.3 캐시 저장소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#623-캐시-저장소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>캐시는 원본 데이터베이스의 부하를 줄이고 응답 속도를 높이기 위해 사용함.</p>
+<p>예</p>
+<ul>
+<li>자주 조회되는 상품 목록</li>
+<li>로그인 세션</li>
+<li>API 응답 캐시</li>
+<li>인기 게시글 목록</li>
+</ul>
+<p>즉, 캐시는 <strong>원본 데이터 저장소를 대체하는 것이 아니라 보조하는 계층</strong>임.</p>
+<hr/>
+<h1 id="63-amazon-rds-개요">6.3 Amazon RDS 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#63-amazon-rds-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Amazon RDS는 <strong>Relational Database Service</strong>의 약자임.</p>
+<p>AWS에서 관계형 데이터베이스를 쉽게 운영할 수 있도록 제공하는 관리형 서비스임.</p>
+<p>온프레미스나 EC2에 직접 DB를 설치하면 다음 작업을 직접 해야 함.</p>
+<ul>
+<li>운영체제 관리</li>
+<li>DB 설치</li>
+<li>패치</li>
+<li>백업</li>
+<li>장애 복구</li>
+<li>복제 구성</li>
+<li>모니터링</li>
+</ul>
+<p>RDS를 사용하면 이런 관리 작업 상당 부분을 AWS가 대신 처리함.</p>
+<p>즉, RDS는 “DB를 직접 설치하는 것”이 아니라</p>
+<p><strong>운영 부담을 줄인 관리형 관계형 DB 서비스</strong>라고 보면 됨.</p>
+<hr/>
+<h1 id="64-rds-지원-엔진">6.4 RDS 지원 엔진<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#64-rds-지원-엔진" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>RDS는 여러 DB 엔진을 지원함.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>엔진</th><th>설명</th></tr></thead><tbody><tr><td>MySQL</td><td>오픈소스 관계형 DB</td></tr><tr><td>MariaDB</td><td>MySQL 계열</td></tr><tr><td>PostgreSQL</td><td>오픈소스 고기능 관계형 DB</td></tr><tr><td>Oracle</td><td>상용 DB</td></tr><tr><td>SQL Server</td><td>Microsoft 관계형 DB</td></tr></tbody></table></div>
+<p>교육 환경에서는 주로 다음 둘 중 하나를 많이 사용함.</p>
+<ul>
+<li>MySQL</li>
+<li>PostgreSQL</li>
+</ul>
+<p>실습 난이도와 범용성을 고려하면 MySQL이 가장 무난함.</p>
+<hr/>
+<h1 id="65-rds의-장점">6.5 RDS의 장점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#65-rds의-장점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-관리형-서비스">1. 관리형 서비스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-관리형-서비스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>백업, 패치, 모니터링, 장애 조치 기능을 AWS가 많이 지원함.</p>
+<h3 id="2-쉬운-배포">2. 쉬운 배포<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-쉬운-배포" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>콘솔 몇 단계만으로 DB를 배포할 수 있음.</p>
+<h3 id="3-고가용성-지원">3. 고가용성 지원<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-고가용성-지원" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Multi-AZ 구성이 가능함.</p>
+<h3 id="4-읽기-확장-가능">4. 읽기 확장 가능<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-읽기-확장-가능" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Read Replica 구성이 가능함.</p>
+<h3 id="5-보안-통합">5. 보안 통합<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-보안-통합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>VPC, 보안 그룹, KMS와 쉽게 연동 가능함.</p>
+<hr/>
+<h1 id="66-rds-아키텍처-핵심-요소">6.6 RDS 아키텍처 핵심 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#66-rds-아키텍처-핵심-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>RDS를 생성할 때 중요한 요소</p>
+<ul>
+<li>DB Engine</li>
+<li>DB Instance Class</li>
+<li>Storage Type</li>
+<li>VPC/Subnet Group</li>
+<li>Security Group</li>
+<li>Backup</li>
+<li>Multi-AZ</li>
+<li>Read Replica</li>
+</ul>
+<hr/>
+<h2 id="661-db-instance-class">6.6.1 DB Instance Class<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#661-db-instance-class" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>RDS도 결국 컴퓨팅 자원이 필요하므로 인스턴스 클래스가 있음.</p>
+<p>예</p>
+<ul>
+<li>db.t3.micro</li>
+<li>db.t3.small</li>
+<li>db.m6i.large</li>
+</ul>
+<p>교육용 실습에서는 보통 비용을 고려해 작은 사양을 사용함.</p>
+<hr/>
+<h2 id="662-storage">6.6.2 Storage<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#662-storage" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>RDS는 내부적으로 스토리지를 사용함.</p>
+<p>예</p>
+<ul>
+<li>gp3</li>
+<li>io1/io2</li>
+</ul>
+<p>보통 실습 환경에서는 범용 SSD 계열을 많이 사용함.</p>
+<hr/>
+<h2 id="663-db-subnet-group">6.6.3 DB Subnet Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#663-db-subnet-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>RDS는 VPC 안에서 배포되며, 어느 서브넷에서 동작할지 정하기 위해 <strong>DB Subnet Group</strong>을 사용함.</p>
+<p>보통 원칙</p>
+<ul>
+<li>최소 2개 AZ의 private subnet 포함</li>
+<li>public subnet보다 private subnet 사용 권장</li>
+</ul>
+<p>즉, RDS는 일반적으로 인터넷에서 직접 접근하지 않도록 private subnet에 배치함.</p>
+<hr/>
+<h1 id="67-rds-보안">6.7 RDS 보안<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#67-rds-보안" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>RDS 보안은 매우 중요함.</p>
+<p>특히 교육 환경에서는 “접속이 되게 만드는 것”에 집중하다가 잘못된 보안 구성을 하기 쉬움.</p>
+<p>RDS 보안 핵심 요소</p>
+<ul>
+<li>Private Subnet 배치</li>
+<li>Security Group 제한</li>
+<li>IAM과 연동되는 주변 권한 통제</li>
+<li>암호화</li>
+<li>백업 보호</li>
+</ul>
+<hr/>
+<h2 id="671-보안-그룹-설계">6.7.1 보안 그룹 설계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#671-보안-그룹-설계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>예를 들어 애플리케이션 서버만 RDS에 접속해야 한다면</p>
+<p>RDS 보안 그룹 인바운드에 3306 포트를 전체 인터넷에 열면 안 됨.</p>
+<p>좋은 방식</p>
+<ul>
+<li>Source를 App 서버 보안 그룹으로 제한</li>
+</ul>
+<p>예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>방향</th><th>프로토콜</th><th>포트</th><th>소스</th></tr></thead><tbody><tr><td>Inbound</td><td>TCP</td><td>3306</td><td>이니셜-sg-app</td></tr></tbody></table></div>
+<p>즉, “누구나 접속 가능”이 아니라 “특정 앱 서버만 접속 가능”하게 설계해야 함.</p>
+<hr/>
+<h2 id="672-public-access-여부">6.7.2 Public Access 여부<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#672-public-access-여부" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>RDS는 생성 시 Public access 옵션이 있음.</p>
+<p>원칙적으로 운영 환경에서는 보통 다음이 권장됨.</p>
+<pre><code>Public access: No
+</code></pre>
+<p>이유</p>
+<ul>
+<li>DB를 인터넷에 직접 노출하지 않기 위함</li>
+<li>DB는 앱 서버를 통해서만 접근하는 구조가 일반적임</li>
+</ul>
+<p>실습에서는 편의상 공개 접근을 고민할 수 있지만, 가능하면 교육도 private 구조로 익히는 것이 좋음.</p>
+<hr/>
+<h1 id="68-multi-az">6.8 Multi-AZ<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#68-multi-az" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Multi-AZ는 고가용성을 위한 RDS 기능임.</p>
+<p>주 DB 인스턴스와 동기 복제되는 대기 인스턴스를 다른 AZ에 두는 구조임.</p>
+<p>구조 예</p>
+<pre><code>Primary DB (AZ-a)
+       │
+동기 복제
+       │
+Standby DB (AZ-b)
+</code></pre>
+<p>특징</p>
+<ul>
+<li>장애 시 자동 장애 조치 가능</li>
+<li>읽기 확장용이 아님</li>
+<li>고가용성 목적임</li>
+</ul>
+<p>즉, Multi-AZ는 성능 향상용이 아니라 <strong>장애 대비용</strong>임.</p>
+<hr/>
+<h1 id="69-read-replica">6.9 Read Replica<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#69-read-replica" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Read Replica는 읽기 부하를 분산하기 위한 기능임.</p>
+<p>구조 예</p>
+<pre><code>Primary DB
+   ├ Read Replica 1
+   └ Read Replica 2
+</code></pre>
+<p>특징</p>
+<ul>
+<li>읽기 전용 복제본</li>
+<li>비동기 복제</li>
+<li>조회 성능 분산 가능</li>
+<li>보고서/통계/조회용 분리 가능</li>
+</ul>
+<p>즉, Read Replica는 <strong>읽기 확장용</strong> 기능임.</p>
+<hr/>
+<h1 id="610-multi-az와-read-replica-차이">6.10 Multi-AZ와 Read Replica 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#610-multi-az와-read-replica-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>Multi-AZ</th><th>Read Replica</th></tr></thead><tbody><tr><td>목적</td><td>고가용성</td><td>읽기 확장</td></tr><tr><td>복제 방식</td><td>동기</td><td>비동기</td></tr><tr><td>사용자 접근</td><td>일반적으로 Primary만 접근</td><td>읽기 전용 접근</td></tr><tr><td>장애 조치</td><td>자동 가능</td><td>일반적으로 자동 장애 조치 목적 아님</td></tr></tbody></table></div>
+<h1 id="611-dynamodb-개요">6.11 DynamoDB 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#611-dynamodb-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>DynamoDB는 AWS의 완전관리형 NoSQL 데이터베이스임.</p>
+<p>특징</p>
+<ul>
+<li>매우 빠른 응답 속도</li>
+<li>서버 관리 불필요</li>
+<li>자동 확장 가능</li>
+<li>대규모 요청 처리에 적합</li>
+<li>키-값 및 문서형 구조 지원</li>
+</ul>
+<p>DynamoDB는 관계형 DB처럼 복잡한 JOIN이나 강한 스키마 구조를 중심으로 쓰기보다는,</p>
+<p><strong>대규모 키 기반 조회</strong>나 <strong>서버리스 환경의 상태 저장</strong>에 적합함.</p>
+<p>즉, DynamoDB는 다음과 같은 상황에서 특히 강점을 가짐.</p>
+<ul>
+<li>사용자별 상태 정보 저장</li>
+<li>대량의 요청을 처리해야 하는 키 기반 조회</li>
+<li>서버리스 애플리케이션의 상태 저장소</li>
+<li>IoT / 이벤트성 데이터 저장</li>
+<li>게임, 모바일, API 중심 서비스</li>
+</ul>
+<hr/>
+<h1 id="612-dynamodb의-핵심-개념">6.12 DynamoDB의 핵심 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#612-dynamodb의-핵심-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>DynamoDB 핵심 개념</p>
+<ul>
+<li>Table</li>
+<li>Item</li>
+<li>Attribute</li>
+<li>Partition Key</li>
+<li>Sort Key</li>
+</ul>
+<hr/>
+<h2 id="6121-table">6.12.1 Table<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6121-table" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>데이터를 저장하는 논리적 단위임.</p>
+<p>예</p>
+<ul>
+<li>Users</li>
+<li>Orders</li>
+<li>DeviceStatus</li>
+<li>SessionState</li>
+<li>ApiRequestLog</li>
+</ul>
+<hr/>
+<h2 id="6122-item">6.12.2 Item<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6122-item" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>관계형 DB의 행(Row)에 대응되는 개념임.</p>
+<p>예</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">{</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;UserId&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;user001&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Name&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;Kim&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Status&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;active&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">}</span></span></code></pre></figure>
+<hr/>
+<h2 id="6123-attribute">6.12.3 Attribute<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6123-attribute" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Item 내부의 각 필드임.</p>
+<p>예</p>
+<ul>
+<li>UserId</li>
+<li>Name</li>
+<li>Status</li>
+<li>UpdatedAt</li>
+</ul>
+<hr/>
+<h2 id="6124-partition-key">6.12.4 Partition Key<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6124-partition-key" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>DynamoDB에서 데이터를 저장하고 조회할 때 기준이 되는 핵심 키임.</p>
+<p>DynamoDB 설계에서 가장 중요하게 보는 항목 중 하나임.</p>
+<p>예</p>
+<ul>
+<li>UserId</li>
+<li>OrderId</li>
+<li>DeviceId</li>
+<li>ApiKey</li>
+</ul>
+<p>Partition Key 설계가 좋지 않으면 데이터가 한쪽으로 몰릴 수 있으므로,</p>
+<p>조회 패턴을 먼저 보고 키를 정해야 함.</p>
+<hr/>
+<h2 id="6125-sort-key">6.12.5 Sort Key<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6125-sort-key" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>선택적으로 함께 사용하는 두 번째 키임.</p>
+<p>같은 Partition Key 내부에서 정렬 기준 역할을 함.</p>
+<p>예</p>
+<ul>
+<li>UserId + OrderDate</li>
+<li>RoomId + MessageTime</li>
+<li>DeviceId + EventTime</li>
+</ul>
+<hr/>
+<h1 id="613-dynamodb-사용-사례">6.13 DynamoDB 사용 사례<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#613-dynamodb-사용-사례" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>DynamoDB는 단순히 “빠른 NoSQL” 정도로 이해하면 부족함.</p>
+<p>실제로는 <strong>대규모 키 기반 조회가 필요한 시스템</strong>에서 매우 자주 사용됨.</p>
+<h3 id="1-사용자-프로필--상태-조회">1. 사용자 프로필 / 상태 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-사용자-프로필--상태-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자 ID로 빠르게 조회해야 하는 정보 저장.</p>
+<h3 id="2-서버리스-애플리케이션-상태-저장">2. 서버리스 애플리케이션 상태 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-서버리스-애플리케이션-상태-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>API Gateway + Lambda 조합에서 상태 저장소로 자주 사용함.</p>
+<h3 id="3-iot-장비-상태-정보-저장">3. IoT 장비 상태 정보 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-iot-장비-상태-정보-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>장비 ID 기준으로 상태를 저장하고 조회하는 구조에 적합함.</p>
+<h3 id="4-게임--모바일-서비스">4. 게임 / 모바일 서비스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-게임--모바일-서비스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>짧은 응답 시간과 대규모 동시 요청 처리에 적합함.</p>
+<h3 id="5-이벤트성-데이터--메타데이터-저장">5. 이벤트성 데이터 / 메타데이터 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-이벤트성-데이터--메타데이터-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>정형화된 관계형 모델보다 키 중심 조회가 중요한 경우에 적합함.</p>
+<hr/>
+<h1 id="614-dynamodb와-rds-비교">6.14 DynamoDB와 RDS 비교<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#614-dynamodb와-rds-비교" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>RDS</th><th>DynamoDB</th></tr></thead><tbody><tr><td>구조</td><td>관계형</td><td>NoSQL</td></tr><tr><td>질의</td><td>SQL</td><td>API 기반 조회</td></tr><tr><td>JOIN</td><td>가능</td><td>일반적으로 없음</td></tr><tr><td>트랜잭션/정합성</td><td>강함</td><td>패턴 중심 설계</td></tr><tr><td>확장성</td><td>전통적 확장 구조</td><td>매우 뛰어남</td></tr><tr><td>대표 용도</td><td>주문, 결제, 회원, 업무 DB</td><td>대규모 키 조회, 상태 저장</td></tr></tbody></table></div>
+<p>즉, DynamoDB는 RDS를 대체하는 개념이 아니라</p>
+<p><strong>RDS와 다른 문제를 해결하는 저장소</strong>라고 보는 것이 맞음.</p>
+<hr/>
+<h1 id="615-amazon-elasticache-개요">6.15 Amazon ElastiCache 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#615-amazon-elasticache-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>ElastiCache는 AWS의 관리형 인메모리 캐시 서비스임.</p>
+<p>메모리에 데이터를 저장해서 매우 빠른 응답을 제공함.</p>
+<p>지원 엔진</p>
+<ul>
+<li>Redis</li>
+<li>Memcached</li>
+</ul>
+<p>실무와 교육에서는 보통 <strong>Redis 중심</strong>으로 설명하는 것이 가장 자연스러움.</p>
+<p>이유</p>
+<ul>
+<li>자료구조가 다양함</li>
+<li>TTL 설정이 쉬움</li>
+<li>세션 저장에 적합함</li>
+<li>캐시 외에도 여러 용도로 확장 가능함</li>
+</ul>
+<hr/>
+<h1 id="616-캐시가-필요한-이유">6.16 캐시가 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#616-캐시가-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>애플리케이션에서 같은 데이터를 반복해서 조회하면 원본 DB에 부하가 쌓임.</p>
+<p>예</p>
+<ul>
+<li>메인 페이지 인기 글 목록</li>
+<li>사용자 프로필 정보</li>
+<li>공지사항 목록</li>
+<li>상품 상세 정보</li>
+<li>API 응답 결과</li>
+</ul>
+<p>이런 데이터를 매번 RDS에서 조회하면 응답 시간이 길어지고 DB 부하가 증가함.</p>
+<p>그래서 자주 조회되는 값을 메모리에 저장해 빠르게 응답함.</p>
+<p>구조 예</p>
+<pre><code>사용자 요청
+   │
+App Server
+   │
+Cache 확인
+ ├ 있으면 캐시 반환
+ └ 없으면 DB 조회 후 캐시에 저장
+</code></pre>
+<p>이 구조를 통해</p>
+<ul>
+<li>응답 속도 향상</li>
+<li>DB 부하 감소</li>
+<li>전체 시스템 처리량 향상</li>
+</ul>
+<p>효과를 얻을 수 있음.</p>
+<hr/>
+<h1 id="617-redis와-memcached-차이">6.17 Redis와 Memcached 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#617-redis와-memcached-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>Redis</th><th>Memcached</th></tr></thead><tbody><tr><td>데이터 구조</td><td>문자열, 해시, 리스트 등 다양함</td><td>단순 Key-Value</td></tr><tr><td>TTL</td><td>지원</td><td>지원</td></tr><tr><td>영속성</td><td>일부 지원 가능</td><td>없음</td></tr><tr><td>기능</td><td>풍부함</td><td>단순함</td></tr><tr><td>대표 용도</td><td>세션, 캐시, 순위표</td><td>단순 캐시</td></tr></tbody></table></div>
+<p>교육에서는 Redis 위주로 설명하는 것이 좋음.</p>
+<hr/>
+<h1 id="618-elasticache-redis-주요-사용-사례">6.18 ElastiCache Redis 주요 사용 사례<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#618-elasticache-redis-주요-사용-사례" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-로그인-세션-저장">1. 로그인 세션 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-로그인-세션-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>가장 대표적인 사용 사례 중 하나임.</p>
+<h3 id="2-조회-캐시">2. 조회 캐시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-조회-캐시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>RDS 조회 결과를 임시 저장하여 빠르게 응답함.</p>
+<h3 id="3-공용-상태-저장">3. 공용 상태 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-공용-상태-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>웹 서버 여러 대가 공통으로 참조해야 하는 임시 상태값 저장.</p>
+<h3 id="4-랭킹--카운터">4. 랭킹 / 카운터<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-랭킹--카운터" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Redis 자료구조를 활용해 빠르게 처리 가능함.</p>
+<h3 id="5-일시적-데이터-저장">5. 일시적 데이터 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-일시적-데이터-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>짧은 시간 유지되는 임시 데이터에 적합함.</p>
+<hr/>
+<h1 id="619-로그인-세션-저장소로서-redis">6.19 로그인 세션 저장소로서 Redis<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#619-로그인-세션-저장소로서-redis" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>로그인 세션은 보통 다음 특징을 가짐.</p>
+<ul>
+<li>매우 자주 조회됨</li>
+<li>짧은 응답 시간이 중요함</li>
+<li>만료 시간이 존재함</li>
+<li>여러 웹 서버가 공유해야 할 수 있음</li>
+</ul>
+<p>이 조건에 Redis가 매우 잘 맞음.</p>
+<hr/>
+<h2 id="6191-왜-redis가-세션에-적합한가">6.19.1 왜 Redis가 세션에 적합한가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6191-왜-redis가-세션에-적합한가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="1-메모리-기반이라-매우-빠름">1. 메모리 기반이라 매우 빠름<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-메모리-기반이라-매우-빠름" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>세션 조회는 거의 모든 요청마다 일어날 수 있음.</p>
+<p>Redis는 이 패턴에 적합함.</p>
+<h3 id="2-ttl-설정이-자연스러움">2. TTL 설정이 자연스러움<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-ttl-설정이-자연스러움" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>예</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> session:abc123</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;user1&quot;</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> EX</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 1800</span></span></code></pre></figure>
+<p>이 명령은 <code>session:abc123</code> 키를 1800초 동안 유지한 뒤 자동 만료시킴.</p>
+<p>세션 만료 처리에 매우 적합함.</p>
+<h3 id="3-여러-서버가-세션을-공유하기-쉬움">3. 여러 서버가 세션을 공유하기 쉬움<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-여러-서버가-세션을-공유하기-쉬움" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>예를 들어 ALB 뒤에 Web 서버가 2대 이상 있으면 요청이 서로 다른 서버로 갈 수 있음.</p>
+<p>이때 각 서버 로컬 메모리에 세션을 두면 로그인 상태가 유지되지 않을 수 있음.</p>
+<p>Redis를 공용 세션 저장소로 두면 이 문제를 해결할 수 있음.</p>
+<h3 id="4-세션-삭제와-갱신이-쉬움">4. 세션 삭제와 갱신이 쉬움<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-세션-삭제와-갱신이-쉬움" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>로그아웃 시 세션 삭제, 활동 시 만료 시간 연장 같은 동작이 자연스러움.</p>
+<hr/>
+<h1 id="620-dynamodb와-redis-역할-구분">6.20 DynamoDB와 Redis 역할 구분<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#620-dynamodb와-redis-역할-구분" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>학생들이 자주 혼동하는 부분이</p>
+<p>“둘 다 빠른 저장소 아닌가?” 하는 점임.</p>
+<p>하지만 역할이 다름.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>구분</th><th>Redis</th><th>DynamoDB</th></tr></thead><tbody><tr><td>주 용도</td><td>세션, 캐시, 임시 상태</td><td>대규모 키-값 저장, 서버리스 상태 저장</td></tr><tr><td>저장 매체</td><td>메모리 중심</td><td>영속 저장 중심</td></tr><tr><td>응답 속도</td><td>매우 빠름</td><td>빠름</td></tr><tr><td>TTL 활용</td><td>매우 자연스러움</td><td>가능</td></tr><tr><td>세션 저장 적합성</td><td>매우 높음</td><td>가능하지만 보조적 선택</td></tr><tr><td>서버리스 친화성</td><td>보통</td><td>매우 높음</td></tr></tbody></table></div>
+<p>즉, 실무적으로 보면</p>
+<pre><code>로그인 세션, 캐시 → Redis 우선 고려
+대규모 키 기반 상태 저장, 서버리스 저장소 → DynamoDB 고려
+</code></pre>
+<p>로 정리하는 것이 가장 현실적임.</p>
+<hr/>
+<h1 id="621-데이터베이스-계층-아키텍처-예">6.21 데이터베이스 계층 아키텍처 예<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#621-데이터베이스-계층-아키텍처-예" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>기존 3계층 아키텍처에 데이터 계층을 연결하면 다음처럼 정리할 수 있음.</p>
+<pre><code>Internet
+   │
+ALB
+   │
+Web / App EC2
+   │
+├ RDS         → 핵심 트랜잭션 데이터
+├ Redis       → 로그인 세션 / 캐시
+└ DynamoDB    → 대규모 키 기반 상태 저장
+</code></pre>
+<p>예시 해석</p>
+<ul>
+<li><strong>RDS</strong> : 회원, 주문, 게시글 같은 핵심 데이터</li>
+<li><strong>Redis</strong> : 로그인 세션, 자주 조회되는 캐시 데이터</li>
+<li><strong>DynamoDB</strong> : 서버리스 상태 저장, 키 기반 빠른 조회 데이터</li>
+</ul>
+<hr/>
+<h1 id="622-실습-3-수정--dynamodb-테이블-생성">6.22 실습 3 수정 : DynamoDB 테이블 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#622-실습-3-수정--dynamodb-테이블-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>DynamoDB를 세션 저장소가 아니라 <strong>대규모 키 기반 상태 저장소</strong> 관점으로 이해함</li>
+<li>Partition Key 설계 개념을 이해함</li>
+<li>콘솔과 CLI로 Item을 저장하고 조회함</li>
+</ul>
+<hr/>
+<h2 id="예시-시나리오">예시 시나리오<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#예시-시나리오" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>“사용자 상태 정보 저장소”</p>
+<p>예를 들어 사용자별 앱 설정, 장치 상태, API 상태 정보 같은 데이터를 저장한다고 가정함.</p>
+<hr/>
+<h2 id="6221-테이블-생성">6.22.1 테이블 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6221-테이블-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>DynamoDB 콘솔 → Create table</p>
+<p>설정 예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Table name</td><td>UserState</td></tr><tr><td>Partition key</td><td>UserId</td></tr><tr><td>Sort key</td><td>StateType</td></tr></tbody></table></div>
+<p>설명</p>
+<ul>
+<li><code>UserId</code> : 사용자 기준 조회</li>
+<li><code>StateType</code> : 상태 종류 구분</li>
+</ul>
+<p>즉, 같은 사용자에 대해 여러 상태 정보를 저장할 수 있음.</p>
+<hr/>
+<h2 id="6222-콘솔에서-아이템-추가">6.22.2 콘솔에서 아이템 추가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6222-콘솔에서-아이템-추가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>예시 값</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">{</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;UserId&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;user-01&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;StateType&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;theme&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Value&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;dark&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;UpdatedAt&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;2026-03-16T12:00:00&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">}</span></span></code></pre></figure>
+<hr/>
+<h2 id="6223-cli로-아이템-추가">6.22.3 CLI로 아이템 추가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6223-cli로-아이템-추가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">aws</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dynamodb</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> put-item</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> \</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  --table-name</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> UserState</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> \</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  --item</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> '{</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;UserId&quot;: {&quot;S&quot;: &quot;user-02&quot;},</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;StateType&quot;: {&quot;S&quot;: &quot;language&quot;},</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;Value&quot;: {&quot;S&quot;: &quot;ko&quot;},</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;UpdatedAt&quot;: {&quot;S&quot;: &quot;2026-03-16T12:10:00&quot;}</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">  }'</span></span></code></pre></figure>
+<h3 id="명령어-설명">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="put-item"><code>put-item</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#put-item" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>DynamoDB 테이블에 데이터를 1건 저장하는 명령임.</p>
+<h3 id="-table-name-userstate"><code>-table-name UserState</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#-table-name-userstate" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>대상 테이블 이름을 지정함.</p>
+<h3 id="-item"><code>-item</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#-item" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>저장할 데이터를 JSON 형식으로 정의함.</p>
+<p>여기서 <code>&quot;S&quot;</code>는 문자열 타입을 의미함.</p>
+<hr/>
+<h2 id="6224-cli로-아이템-조회">6.22.4 CLI로 아이템 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6224-cli로-아이템-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">aws</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dynamodb</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> get-item</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> \</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  --table-name</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> UserState</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> \</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  --key</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> '{</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;UserId&quot;: {&quot;S&quot;: &quot;user-02&quot;},</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">    &quot;StateType&quot;: {&quot;S&quot;: &quot;language&quot;}</span></span>
+<span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">  }'</span></span></code></pre></figure>
+<p>이 명령은 특정 사용자(<code>user-02</code>)의 특정 상태(<code>language</code>)를 조회함.</p>
+<hr/>
+<h1 id="623-실습-4-수정--elasticache-redis-생성-및-세션-저장-예시">6.23 실습 4 수정 : ElastiCache Redis 생성 및 세션 저장 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#623-실습-4-수정--elasticache-redis-생성-및-세션-저장-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>Redis를 로그인 세션 / 캐시 저장소 관점에서 이해함</li>
+<li>Redis 기본 set/get 및 TTL 동작을 확인함</li>
+</ul>
+<hr/>
+<h2 id="6231-redis-클러스터-생성-예시">6.23.1 Redis 클러스터 생성 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6231-redis-클러스터-생성-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>ElastiCache 콘솔 → Redis OSS → Create</p>
+<p>설정 예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Cluster mode</td><td>Disabled</td></tr><tr><td>Node type</td><td>cache.t3.micro 또는 최소 사양</td></tr><tr><td>Replicas</td><td>0 또는 실습 환경에 맞춤</td></tr><tr><td>VPC</td><td>이니셜-vpc-main</td></tr><tr><td>Subnet group</td><td>private subnet 포함</td></tr><tr><td>Security group</td><td>이니셜-sg-redis</td></tr></tbody></table></div>
+<p>보안 그룹 인바운드</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>방향</th><th>프로토콜</th><th>포트</th><th>소스</th></tr></thead><tbody><tr><td>Inbound</td><td>TCP</td><td>6379</td><td>이니셜-sg-app</td></tr></tbody></table></div>
+<hr/>
+<h2 id="6232-ec2에서-redis-클라이언트-설치">6.23.2 EC2에서 Redis 클라이언트 설치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6232-ec2에서-redis-클라이언트-설치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Amazon Linux 예시</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dnf</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> install</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -y</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis6</span></span></code></pre></figure>
+<p>설치 확인</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --version</span></span></code></pre></figure>
+<hr/>
+<h2 id="6233-redis-접속">6.23.3 Redis 접속<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6233-redis-접속" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -h</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> &lt;</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">REDIS-ENDPOIN</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">T</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">></span></span></code></pre></figure>
+<p>예</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -h</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> myredis.xxxxxx.use1.cache.amazonaws.com</span></span></code></pre></figure>
+<hr/>
+<h2 id="6234-세션-저장-예시">6.23.4 세션 저장 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6234-세션-저장-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> session:abc123</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> '{&quot;user_id&quot;:&quot;u1001&quot;,&quot;role&quot;:&quot;student&quot;}'</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> EX</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 1800</span></span></code></pre></figure>
+<h3 id="명령어-설명-1">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="set"><code>SET</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#set" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Redis에 key-value를 저장하는 기본 명령임.</p>
+<h3 id="sessionabc123"><code>session:abc123</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sessionabc123" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>세션 ID를 key로 사용하는 예시임.</p>
+<h3 id="user_idu1001rolestudent"><code>'{&quot;user_id&quot;:&quot;u1001&quot;,&quot;role&quot;:&quot;student&quot;}'</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#user_idu1001rolestudent" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>세션에 저장할 사용자 정보 예시임.</p>
+<h3 id="ex-1800"><code>EX 1800</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ex-1800" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>1800초 뒤 자동 만료되도록 TTL을 설정함.</p>
+<p>즉, 로그인 세션을 저장하면서 동시에 만료 시간도 같이 지정한 것임.</p>
+<p>조회</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> session:abc123</span></span></code></pre></figure>
+<p>TTL 확인</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">TTL</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> session:abc123</span></span></code></pre></figure>
+<p>삭제</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">DEL</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> session:abc123</span></span></code></pre></figure>
+<p>이 흐름은 각각</p>
+<ul>
+<li>로그인 시 세션 저장</li>
+<li>요청 처리 시 세션 조회</li>
+<li>로그아웃 시 세션 삭제</li>
+</ul>
+<p>에 대응.</p>
+<hr/>
+<h1 id="624-데이터-저장소-선택-기준">6.24 데이터 저장소 선택 기준<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#624-데이터-저장소-선택-기준" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>요구사항</th><th>적합한 서비스</th></tr></thead><tbody><tr><td>SQL, 트랜잭션, JOIN 필요</td><td>RDS</td></tr><tr><td>로그인 세션 저장</td><td>ElastiCache Redis</td></tr><tr><td>자주 조회되는 데이터 캐시</td><td>ElastiCache Redis</td></tr><tr><td>대규모 키 기반 조회</td><td>DynamoDB</td></tr><tr><td>서버리스 상태 저장</td><td>DynamoDB</td></tr><tr><td>DB 고가용성</td><td>RDS Multi-AZ</td></tr><tr><td>읽기 부하 분산</td><td>RDS Read Replica</td></tr></tbody></table></div></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-34" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#6장-aws-데이터베이스-아키텍처-rds-dynamodb-elasticache" data-for="6장-aws-데이터베이스-아키텍처-rds-dynamodb-elasticache">6장 AWS 데이터베이스 아키텍처 (RDS, DynamoDB, ElastiCache)</a></li><li class="depth-0"><a href="#61-데이터베이스-아키텍처-개요" data-for="61-데이터베이스-아키텍처-개요">6.1 데이터베이스 아키텍처 개요</a></li><li class="depth-0"><a href="#62-데이터베이스-유형-구분" data-for="62-데이터베이스-유형-구분">6.2 데이터베이스 유형 구분</a></li><li class="depth-1"><a href="#621-관계형-데이터베이스" data-for="621-관계형-데이터베이스">6.2.1 관계형 데이터베이스</a></li><li class="depth-1"><a href="#622-nosql-데이터베이스" data-for="622-nosql-데이터베이스">6.2.2 NoSQL 데이터베이스</a></li><li class="depth-1"><a href="#623-캐시-저장소" data-for="623-캐시-저장소">6.2.3 캐시 저장소</a></li><li class="depth-0"><a href="#63-amazon-rds-개요" data-for="63-amazon-rds-개요">6.3 Amazon RDS 개요</a></li><li class="depth-0"><a href="#64-rds-지원-엔진" data-for="64-rds-지원-엔진">6.4 RDS 지원 엔진</a></li><li class="depth-0"><a href="#65-rds의-장점" data-for="65-rds의-장점">6.5 RDS의 장점</a></li><li class="depth-2"><a href="#1-관리형-서비스" data-for="1-관리형-서비스">1. 관리형 서비스</a></li><li class="depth-2"><a href="#2-쉬운-배포" data-for="2-쉬운-배포">2. 쉬운 배포</a></li><li class="depth-2"><a href="#3-고가용성-지원" data-for="3-고가용성-지원">3. 고가용성 지원</a></li><li class="depth-2"><a href="#4-읽기-확장-가능" data-for="4-읽기-확장-가능">4. 읽기 확장 가능</a></li><li class="depth-2"><a href="#5-보안-통합" data-for="5-보안-통합">5. 보안 통합</a></li><li class="depth-0"><a href="#66-rds-아키텍처-핵심-요소" data-for="66-rds-아키텍처-핵심-요소">6.6 RDS 아키텍처 핵심 요소</a></li><li class="depth-1"><a href="#661-db-instance-class" data-for="661-db-instance-class">6.6.1 DB Instance Class</a></li><li class="depth-1"><a href="#662-storage" data-for="662-storage">6.6.2 Storage</a></li><li class="depth-1"><a href="#663-db-subnet-group" data-for="663-db-subnet-group">6.6.3 DB Subnet Group</a></li><li class="depth-0"><a href="#67-rds-보안" data-for="67-rds-보안">6.7 RDS 보안</a></li><li class="depth-1"><a href="#671-보안-그룹-설계" data-for="671-보안-그룹-설계">6.7.1 보안 그룹 설계</a></li><li class="depth-1"><a href="#672-public-access-여부" data-for="672-public-access-여부">6.7.2 Public Access 여부</a></li><li class="depth-0"><a href="#68-multi-az" data-for="68-multi-az">6.8 Multi-AZ</a></li><li class="depth-0"><a href="#69-read-replica" data-for="69-read-replica">6.9 Read Replica</a></li><li class="depth-0"><a href="#610-multi-az와-read-replica-차이" data-for="610-multi-az와-read-replica-차이">6.10 Multi-AZ와 Read Replica 차이</a></li><li class="depth-0"><a href="#611-dynamodb-개요" data-for="611-dynamodb-개요">6.11 DynamoDB 개요</a></li><li class="depth-0"><a href="#612-dynamodb의-핵심-개념" data-for="612-dynamodb의-핵심-개념">6.12 DynamoDB의 핵심 개념</a></li><li class="depth-1"><a href="#6121-table" data-for="6121-table">6.12.1 Table</a></li><li class="depth-1"><a href="#6122-item" data-for="6122-item">6.12.2 Item</a></li><li class="depth-1"><a href="#6123-attribute" data-for="6123-attribute">6.12.3 Attribute</a></li><li class="depth-1"><a href="#6124-partition-key" data-for="6124-partition-key">6.12.4 Partition Key</a></li><li class="depth-1"><a href="#6125-sort-key" data-for="6125-sort-key">6.12.5 Sort Key</a></li><li class="depth-0"><a href="#613-dynamodb-사용-사례" data-for="613-dynamodb-사용-사례">6.13 DynamoDB 사용 사례</a></li><li class="depth-2"><a href="#1-사용자-프로필--상태-조회" data-for="1-사용자-프로필--상태-조회">1. 사용자 프로필 / 상태 조회</a></li><li class="depth-2"><a href="#2-서버리스-애플리케이션-상태-저장" data-for="2-서버리스-애플리케이션-상태-저장">2. 서버리스 애플리케이션 상태 저장</a></li><li class="depth-2"><a href="#3-iot-장비-상태-정보-저장" data-for="3-iot-장비-상태-정보-저장">3. IoT 장비 상태 정보 저장</a></li><li class="depth-2"><a href="#4-게임--모바일-서비스" data-for="4-게임--모바일-서비스">4. 게임 / 모바일 서비스</a></li><li class="depth-2"><a href="#5-이벤트성-데이터--메타데이터-저장" data-for="5-이벤트성-데이터--메타데이터-저장">5. 이벤트성 데이터 / 메타데이터 저장</a></li><li class="depth-0"><a href="#614-dynamodb와-rds-비교" data-for="614-dynamodb와-rds-비교">6.14 DynamoDB와 RDS 비교</a></li><li class="depth-0"><a href="#615-amazon-elasticache-개요" data-for="615-amazon-elasticache-개요">6.15 Amazon ElastiCache 개요</a></li><li class="depth-0"><a href="#616-캐시가-필요한-이유" data-for="616-캐시가-필요한-이유">6.16 캐시가 필요한 이유</a></li><li class="depth-0"><a href="#617-redis와-memcached-차이" data-for="617-redis와-memcached-차이">6.17 Redis와 Memcached 차이</a></li><li class="depth-0"><a href="#618-elasticache-redis-주요-사용-사례" data-for="618-elasticache-redis-주요-사용-사례">6.18 ElastiCache Redis 주요 사용 사례</a></li><li class="depth-2"><a href="#1-로그인-세션-저장" data-for="1-로그인-세션-저장">1. 로그인 세션 저장</a></li><li class="depth-2"><a href="#2-조회-캐시" data-for="2-조회-캐시">2. 조회 캐시</a></li><li class="depth-2"><a href="#3-공용-상태-저장" data-for="3-공용-상태-저장">3. 공용 상태 저장</a></li><li class="depth-2"><a href="#4-랭킹--카운터" data-for="4-랭킹--카운터">4. 랭킹 / 카운터</a></li><li class="depth-2"><a href="#5-일시적-데이터-저장" data-for="5-일시적-데이터-저장">5. 일시적 데이터 저장</a></li><li class="depth-0"><a href="#619-로그인-세션-저장소로서-redis" data-for="619-로그인-세션-저장소로서-redis">6.19 로그인 세션 저장소로서 Redis</a></li><li class="depth-1"><a href="#6191-왜-redis가-세션에-적합한가" data-for="6191-왜-redis가-세션에-적합한가">6.19.1 왜 Redis가 세션에 적합한가</a></li><li class="depth-2"><a href="#1-메모리-기반이라-매우-빠름" data-for="1-메모리-기반이라-매우-빠름">1. 메모리 기반이라 매우 빠름</a></li><li class="depth-2"><a href="#2-ttl-설정이-자연스러움" data-for="2-ttl-설정이-자연스러움">2. TTL 설정이 자연스러움</a></li><li class="depth-2"><a href="#3-여러-서버가-세션을-공유하기-쉬움" data-for="3-여러-서버가-세션을-공유하기-쉬움">3. 여러 서버가 세션을 공유하기 쉬움</a></li><li class="depth-2"><a href="#4-세션-삭제와-갱신이-쉬움" data-for="4-세션-삭제와-갱신이-쉬움">4. 세션 삭제와 갱신이 쉬움</a></li><li class="depth-0"><a href="#620-dynamodb와-redis-역할-구분" data-for="620-dynamodb와-redis-역할-구분">6.20 DynamoDB와 Redis 역할 구분</a></li><li class="depth-0"><a href="#621-데이터베이스-계층-아키텍처-예" data-for="621-데이터베이스-계층-아키텍처-예">6.21 데이터베이스 계층 아키텍처 예</a></li><li class="depth-0"><a href="#622-실습-3-수정--dynamodb-테이블-생성" data-for="622-실습-3-수정--dynamodb-테이블-생성">6.22 실습 3 수정 : DynamoDB 테이블 생성</a></li><li class="depth-1"><a href="#예시-시나리오" data-for="예시-시나리오">예시 시나리오</a></li><li class="depth-1"><a href="#6221-테이블-생성" data-for="6221-테이블-생성">6.22.1 테이블 생성</a></li><li class="depth-1"><a href="#6222-콘솔에서-아이템-추가" data-for="6222-콘솔에서-아이템-추가">6.22.2 콘솔에서 아이템 추가</a></li><li class="depth-1"><a href="#6223-cli로-아이템-추가" data-for="6223-cli로-아이템-추가">6.22.3 CLI로 아이템 추가</a></li><li class="depth-2"><a href="#명령어-설명" data-for="명령어-설명">명령어 설명</a></li><li class="depth-2"><a href="#put-item" data-for="put-item">put-item</a></li><li class="depth-2"><a href="#-table-name-userstate" data-for="-table-name-userstate">-table-name UserState</a></li><li class="depth-2"><a href="#-item" data-for="-item">-item</a></li><li class="depth-1"><a href="#6224-cli로-아이템-조회" data-for="6224-cli로-아이템-조회">6.22.4 CLI로 아이템 조회</a></li><li class="depth-0"><a href="#623-실습-4-수정--elasticache-redis-생성-및-세션-저장-예시" data-for="623-실습-4-수정--elasticache-redis-생성-및-세션-저장-예시">6.23 실습 4 수정 : ElastiCache Redis 생성 및 세션 저장 예시</a></li><li class="depth-1"><a href="#6231-redis-클러스터-생성-예시" data-for="6231-redis-클러스터-생성-예시">6.23.1 Redis 클러스터 생성 예시</a></li><li class="depth-1"><a href="#6232-ec2에서-redis-클라이언트-설치" data-for="6232-ec2에서-redis-클라이언트-설치">6.23.2 EC2에서 Redis 클라이언트 설치</a></li><li class="depth-1"><a href="#6233-redis-접속" data-for="6233-redis-접속">6.23.3 Redis 접속</a></li><li class="depth-1"><a href="#6234-세션-저장-예시" data-for="6234-세션-저장-예시">6.23.4 세션 저장 예시</a></li><li class="depth-2"><a href="#명령어-설명-1" data-for="명령어-설명-1">명령어 설명</a></li><li class="depth-2"><a href="#set" data-for="set">SET</a></li><li class="depth-2"><a href="#sessionabc123" data-for="sessionabc123">session:abc123</a></li><li class="depth-2"><a href="#user_idu1001rolestudent" data-for="user_idu1001rolestudent">'{&quot;user_id&quot;:&quot;u1001&quot;,&quot;role&quot;:&quot;student&quot;}'</a></li><li class="depth-2"><a href="#ex-1800" data-for="ex-1800">EX 1800</a></li><li class="depth-0"><a href="#624-데이터-저장소-선택-기준" data-for="624-데이터-저장소-선택-기준">6.24 데이터 저장소 선택 기준</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

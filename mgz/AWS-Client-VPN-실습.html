@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>AWS Client VPN 실습</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="AWS Client VPN 실습"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="AWS Client VPN 실습"/><meta name="twitter:description" content="AWS Client VPN 실습 Easy-RSA를 이용한 인증서 생성과 Client VPN 구성 Ubuntu / Windows 기준 1."/><meta property="og:description" content="AWS Client VPN 실습 Easy-RSA를 이용한 인증서 생성과 Client VPN 구성 Ubuntu / Windows 기준 1."/><meta property="og:image:alt" content="AWS Client VPN 실습 Easy-RSA를 이용한 인증서 생성과 Client VPN 구성 Ubuntu / Windows 기준 1."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/AWS-Client-VPN-실습"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/AWS-Client-VPN-실습"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="AWS Client VPN 실습 Easy-RSA를 이용한 인증서 생성과 Client VPN 구성 Ubuntu / Windows 기준 1."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/AWS-Client-VPN-실습"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-55"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-55" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>AWS Client VPN 실습</a></div></nav><h1 class="article-title">AWS Client VPN 실습</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>18 min read</span></p></div></div><article class="popover-hint"><h1 id="aws-client-vpn-실습">AWS Client VPN 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aws-client-vpn-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="easy-rsa를-이용한-인증서-생성과-client-vpn-구성">Easy-RSA를 이용한 인증서 생성과 Client VPN 구성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#easy-rsa를-이용한-인증서-생성과-client-vpn-구성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="ubuntu--windows-기준">Ubuntu / Windows 기준<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ubuntu--windows-기준" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<hr/>
+<h1 id="1-실습-목표">1. 실습 목표<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-실습-목표" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>본 실습에서는 <strong>Easy-RSA를 이용해 CA 인증서, 서버 인증서, 클라이언트 인증서</strong>를 생성하고,</p>
+<p>이를 이용해 <strong>AWS Client VPN Endpoint</strong>를 구성한 뒤,</p>
+<p>외부 사용자 PC에서 <strong>AWS VPC 내부 Private Subnet 자원에 안전하게 접속</strong>하는 환경을 구성한다.</p>
+<p>실습을 통해 다음 내용을 이해한다.</p>
+<ul>
+<li>Easy-RSA를 이용한 인증서 생성 방법</li>
+<li>CA 인증서, 서버 인증서, 클라이언트 인증서의 역할</li>
+<li>AWS Certificate Manager(ACM)로 인증서를 가져오는 방법</li>
+<li>AWS Client VPN Endpoint 생성 방법</li>
+<li>Target Network Association의 의미</li>
+<li>Authorization Rule의 의미</li>
+<li><code>.ovpn</code> 구성 파일 수정 방법</li>
+<li>AWS VPN Client를 이용한 접속 방법</li>
+<li>VPN 연결 후 Private EC2와 통신 확인 방법</li>
+</ul>
+<hr/>
+<h1 id="2-실습-구성-개요">2. 실습 구성 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-실습-구성-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS Client VPN은 사용자의 PC가 인터넷을 통해 AWS VPC 내부 네트워크에 접속할 수 있도록 해주는</p>
+<p>AWS의 관리형 원격 접속 VPN 서비스다.</p>
+<p>구조는 다음과 같다.</p>
+<pre><code>사용자 PC
+   │
+   │ AWS VPN Client
+   │
+Internet
+   │
+AWS Client VPN Endpoint
+   │
+Target Network Association
+   │
+VPC Subnet
+   │
+Private Subnet EC2
+</code></pre>
+<p>실습 흐름은 다음과 같다.</p>
+<pre><code>1. Easy-RSA 설치
+2. PKI 초기화
+3. CA 인증서 생성
+4. 서버 인증서 생성
+5. 클라이언트 인증서 생성
+6. ACM에 서버 인증서 등록
+7. Client VPN Endpoint 생성
+8. 대상 네트워크 연결
+9. 권한부여 규칙 생성
+10. 클라이언트 구성 파일 다운로드
+11. 클라이언트 인증서와 키를 .ovpn 파일에 삽입
+12. AWS VPN Client로 연결
+13. Private EC2 통신 확인
+</code></pre>
+<hr/>
+<h1 id="3-사전-준비">3. 사전 준비<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-사전-준비" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 전에 다음 환경이 준비되어 있어야 한다.</p>
+<ul>
+<li>AWS 계정</li>
+<li>VPC 1개</li>
+<li>Private Subnet에 배치된 EC2 인스턴스 1대 이상</li>
+<li>VPC 내부 IP를 가진 테스트 대상 서버</li>
+<li>AWS Console 접속 가능 환경</li>
+<li>Ubuntu 또는 Windows PC</li>
+<li>관리자 권한 계정</li>
+<li>텍스트 편집기
+<ul>
+<li>Ubuntu: vim, nano, code 중 하나</li>
+<li>Windows: VS Code, Notepad++ 권장</li>
+</ul>
+</li>
+</ul>
+<hr/>
+<h1 id="4-핵심-개념-이해">4. 핵심 개념 이해<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-핵심-개념-이해" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="41-왜-인증서가-필요한가">4.1 왜 인증서가 필요한가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#41-왜-인증서가-필요한가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS Client VPN에서 <strong>Mutual Authentication</strong>을 사용할 경우</p>
+<p>서버와 클라이언트가 서로를 인증해야 한다.</p>
+<p>여기서 필요한 것이 인증서다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>인증서</th><th>역할</th></tr></thead><tbody><tr><td>CA 인증서</td><td>전체 인증서 체계의 신뢰 기준</td></tr><tr><td>서버 인증서</td><td>Client VPN 서버가 정상적인 서버임을 증명</td></tr><tr><td>클라이언트 인증서</td><td>접속 사용자가 허가된 사용자임을 증명</td></tr></tbody></table></div>
+<p>즉,</p>
+<p>서버는 자신의 서버 인증서를 제시하고,</p>
+<p>클라이언트는 자신의 클라이언트 인증서를 제시한다.</p>
+<p>그리고 둘 다 같은 CA 기준으로 검증된다.</p>
+<hr/>
+<h2 id="42-easy-rsa란-무엇인가">4.2 Easy-RSA란 무엇인가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#42-easy-rsa란-무엇인가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Easy-RSA는 OpenVPN 환경에서 자주 사용하는 <strong>간단한 PKI 관리 도구</strong>다.</p>
+<p>OpenSSL을 직접 길게 다루지 않고도 다음 작업을 쉽게 수행할 수 있다.</p>
+<ul>
+<li>PKI 초기화</li>
+<li>CA 생성</li>
+<li>서버 인증서 생성</li>
+<li>클라이언트 인증서 생성</li>
+<li>인증서 서명</li>
+</ul>
+<p>즉, 인증서 실습을 할 때 가장 간단하게 시작하기 좋은 도구다.</p>
+<hr/>
+<h1 id="5-ubuntu에서-easy-rsa-설치-및-인증서-생성">5. Ubuntu에서 Easy-RSA 설치 및 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-ubuntu에서-easy-rsa-설치-및-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h2 id="51-패키지-설치">5.1 패키지 설치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#51-패키지-설치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Ubuntu에서 먼저 패키지를 설치한다.</p>
+<pre><code>sudo apt-get update
+sudo apt-get install easy-rsa-y
+</code></pre>
+<h3 id="명령-설명">명령 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="sudo-apt-get-update"><code>sudo apt-get update</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sudo-apt-get-update" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>패키지 저장소 목록을 최신 상태로 갱신한다.</p>
+<h3 id="sudo-apt-get-install-easy-rsa--y"><code>sudo apt-get install easy-rsa -y</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sudo-apt-get-install-easy-rsa--y" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Easy-RSA 패키지를 설치한다.</p>
+<hr/>
+<h2 id="52-작업-디렉터리-생성">5.2 작업 디렉터리 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#52-작업-디렉터리-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Ubuntu에서는 Easy-RSA 관련 파일을 작업용 디렉터리로 복사해서 사용하는 방식이 일반적이다.</p>
+<pre><code>sudomkdir-p /etc/openvpn/easy-rsa
+sudo cp-r /usr/share/easy-rsa/* /etc/openvpn/easy-rsa/
+cd /etc/openvpn/easy-rsa
+</code></pre>
+<h3 id="명령-설명-1">명령 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령-설명-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="mkdir--p-etcopenvpneasy-rsa"><code>mkdir -p /etc/openvpn/easy-rsa</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#mkdir--p-etcopenvpneasy-rsa" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>작업 디렉터리를 생성한다.</p>
+<h3 id="cp--r-usrshareeasy-rsa-etcopenvpneasy-rsa"><code>cp -r /usr/share/easy-rsa/* /etc/openvpn/easy-rsa/</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cp--r-usrshareeasy-rsa-etcopenvpneasy-rsa" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>설치된 Easy-RSA 기본 파일들을 작업 디렉터리로 복사한다.</p>
+<h3 id="cd-etcopenvpneasy-rsa"><code>cd /etc/openvpn/easy-rsa</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cd-etcopenvpneasy-rsa" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>작업 디렉터리로 이동한다.</p>
+<hr/>
+<h2 id="53-pki-초기화">5.3 PKI 초기화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#53-pki-초기화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>./easyrsa init-pki
+</code></pre>
+<h3 id="설명">설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 명령은 인증서와 키를 저장할 PKI 구조를 초기화한다.</p>
+<p>실행 후 <code>pki/</code> 디렉터리가 생성된다.</p>
+<p>PKI는 Public Key Infrastructure의 약자이며,</p>
+<p>인증서와 키를 체계적으로 관리하기 위한 디렉터리 구조라고 이해하면 된다.</p>
+<hr/>
+<h2 id="54-ca-인증서-생성">5.4 CA 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#54-ca-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>./easyrsa build-ca nopass
+</code></pre>
+<p>실행 중 Common Name 입력이 나오면 예를 들어 다음처럼 입력한다.</p>
+<pre><code>Easy-RSA CA
+</code></pre>
+<h3 id="설명-1">설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#설명-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 명령은 다음 두 가지를 만든다.</p>
+<ul>
+<li>CA 인증서</li>
+<li>CA 개인키</li>
+</ul>
+<p>생성 결과는 보통 다음 위치에 저장된다.</p>
+<pre><code>pki/ca.crt
+pki/private/ca.key
+</code></pre>
+<p>여기서 <code>nopass</code>는 개인키 암호를 설정하지 않겠다는 의미다.</p>
+<p>실습 편의상 많이 사용하지만 운영 환경에서는 보안 정책을 검토해야 한다.</p>
+<hr/>
+<h2 id="55-클라이언트-인증서-생성">5.5 클라이언트 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#55-클라이언트-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>./easyrsa build-client-full client1.kyt nopass
+</code></pre>
+<h3 id="설명-2">설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#설명-2" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 명령은 <code>client1.kyt</code> 라는 이름의 클라이언트 인증서를 생성한다.</p>
+<p>생성 결과</p>
+<pre><code>pki/issued/client1.kyt.crt
+pki/private/client1.kyt.key
+</code></pre>
+<ul>
+<li><code>.crt</code> : 인증서</li>
+<li><code>.key</code> : 개인키</li>
+</ul>
+<hr/>
+<h2 id="56-서버-인증서-생성">5.6 서버 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#56-서버-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>./easyrsa build-server-full server1.kyt nopass
+</code></pre>
+<h3 id="설명-3">설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#설명-3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 명령은 <code>server1.kyt</code> 라는 이름의 서버 인증서를 생성한다.</p>
+<p>생성 결과</p>
+<pre><code>pki/issued/server1.kyt.crt
+pki/private/server1.kyt.key
+</code></pre>
+<hr/>
+<h2 id="57-생성-결과-확인">5.7 생성 결과 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#57-생성-결과-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>pwd
+ls
+ls pki
+ls pki/issued
+ls pki/private
+cat pki/ca.crt
+</code></pre>
+<p>중요 파일은 다음과 같다.</p>
+<pre><code>pki/ca.crt
+pki/private/ca.key
+pki/issued/server1.kyt.crt
+pki/private/server1.kyt.key
+pki/issued/client1.kyt.crt
+pki/private/client1.kyt.key
+</code></pre>
+<hr/>
+<h1 id="6-windows에서-easy-rsa-설치-및-인증서-생성">6. Windows에서 Easy-RSA 설치 및 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-windows에서-easy-rsa-설치-및-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p><a href="https://docs.aws.amazon.com/ko_kr/vpn/latest/clientvpn-admin/client-auth-mutual-enable.html" class="external">https://docs.aws.amazon.com/ko_kr/vpn/latest/clientvpn-admin/client-auth-mutual-enable.html<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a></p>
+<h3 id="61-easy-rsa-압축-해제">6.1 Easy-RSA 압축 해제<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#61-easy-rsa-압축-해제" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>예시 경로</p>
+<pre><code>C:\EasyRSA-3.2.4
+</code></pre>
+<h3 id="62-cmd-실행-후-경로-이동">6.2 CMD 실행 후 경로 이동<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#62-cmd-실행-후-경로-이동" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>cd C:\EasyRSA-3.1.7
+</code></pre>
+<h3 id="63-easy-rsa-시작-배치-파일-실행">6.3 Easy-RSA 시작 배치 파일 실행<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#63-easy-rsa-시작-배치-파일-실행" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>.\EasyRSA-Start.bat
+</code></pre>
+<h3 id="64-pki-초기화">6.4 PKI 초기화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#64-pki-초기화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>easyrsa init-pki
+</code></pre>
+<h3 id="65-ca-생성">6.5 CA 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#65-ca-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>easyrsa build-ca nopass
+</code></pre>
+<h3 id="66-클라이언트-인증서-생성">6.6 클라이언트 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#66-클라이언트-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>easyrsa build-client-full client1.kyt nopass
+</code></pre>
+<h3 id="67-서버-인증서-생성">6.7 서버 인증서 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#67-서버-인증서-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>easyrsa build-server-full server1.kyt nopass
+</code></pre>
+<hr/>
+<h1 id="7-생성된-파일의-역할-정리">7. 생성된 파일의 역할 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-생성된-파일의-역할-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>파일</th><th>설명</th><th>사용 위치</th></tr></thead><tbody><tr><td><code>ca.crt</code></td><td>CA 인증서</td><td>ACM 체인, <code>.ovpn</code>의 <code>&lt;ca></code></td></tr><tr><td><code>ca.key</code></td><td>CA 개인키</td><td>외부 제공 금지</td></tr><tr><td><code>server1.kyt.crt</code></td><td>서버 인증서</td><td>ACM 등록</td></tr><tr><td><code>server1.kyt.key</code></td><td>서버 개인키</td><td>ACM 등록</td></tr><tr><td><code>client1.kyt.crt</code></td><td>클라이언트 인증서</td><td><code>.ovpn</code>의 <code>&lt;cert></code></td></tr><tr><td><code>client1.kyt.key</code></td><td>클라이언트 개인키</td><td><code>.ovpn</code>의 <code>&lt;key></code></td></tr></tbody></table></div>
+<hr/>
+<h1 id="8-acm에-서버-인증서-가져오기">8. ACM에 서버 인증서 가져오기<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-acm에-서버-인증서-가져오기" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS Client VPN Endpoint는 AWS 내부에서 서버 인증서를 사용해야 하므로</p>
+<p>서버 인증서를 <strong>AWS Certificate Manager(ACM)</strong> 에 등록해야 한다.</p>
+<hr/>
+<h2 id="81-acm-이동">8.1 ACM 이동<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#81-acm-이동" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS Console에서 다음 메뉴로 이동한다.</p>
+<pre><code>Certificate Manager → Import certificate
+</code></pre>
+<hr/>
+<h2 id="82-입력-항목">8.2 입력 항목<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#82-입력-항목" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>다음 파일 내용을 각각 복사해서 넣는다.</p>
+<h3 id="certificate-body">Certificate body<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#certificate-body" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p><code>server1.kyt.crt</code></p>
+<h3 id="certificate-private-key">Certificate private key<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#certificate-private-key" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p><code>server1.kyt.key</code></p>
+<h3 id="certificate-chain">Certificate chain<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#certificate-chain" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p><code>ca.crt</code></p>
+<hr/>
+<h2 id="93-파일-내용-확인-예시">9.3 파일 내용 확인 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#93-파일-내용-확인-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>cat /etc/openvpn/easy-rsa/pki/issued/server1.kyt.crt
+cat /etc/openvpn/easy-rsa/pki/private/server1.kyt.key
+cat /etc/openvpn/easy-rsa/pki/ca.crt
+</code></pre>
+<p>복사한 내용을 ACM 입력창에 붙여 넣고 인증서를 가져온다.</p>
+<hr/>
+<h1 id="10-aws-client-vpn-endpoint-생성">10. AWS Client VPN Endpoint 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#10-aws-client-vpn-endpoint-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h2 id="101-메뉴-이동">10.1 메뉴 이동<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#101-메뉴-이동" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS Console에서 다음으로 이동한다.</p>
+<pre><code>VPC → Client VPN Endpoints → Create Client VPN Endpoint
+</code></pre>
+<hr/>
+<h2 id="102-주요-설정값">10.2 주요 설정값<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#102-주요-설정값" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="name-tag">Name tag<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#name-tag" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>예시</p>
+<pre><code>lab-client-vpn
+</code></pre>
+<h3 id="client-ipv4-cidr">Client IPv4 CIDR<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#client-ipv4-cidr" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>예시</p>
+<pre><code>10.250.0.0/22
+</code></pre>
+<h3 id="중요-설명">중요 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#중요-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 CIDR은 <strong>VPN 사용자에게 할당될 가상 IP 대역</strong>이다.</p>
+<p>VPC의 서브넷 CIDR이 아니다.</p>
+<p>주의할 점은 다음과 같다.</p>
+<ul>
+<li>VPC CIDR과 중복되면 안 됨</li>
+<li>온프레미스 네트워크와도 중복되지 않는 것이 좋음</li>
+<li>다른 VPN과도 중복되지 않는 것이 좋음</li>
+</ul>
+<hr/>
+<h2 id="103-server-certificate-arn">10.3 Server certificate ARN<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#103-server-certificate-arn" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>ACM에 등록한 서버 인증서를 선택한다.</p>
+<hr/>
+<h2 id="104-authentication-options">10.4 Authentication options<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#104-authentication-options" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p><strong>Mutual authentication</strong> 을 선택한다.</p>
+<p>이 설정은 클라이언트도 인증서를 제출해야 접속 가능하도록 하는 방식이다.</p>
+<hr/>
+<h2 id="105-split-tunnel-활성화">10.5 Split-tunnel 활성화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#105-split-tunnel-활성화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>분할 터널을 활성화하면</p>
+<p>AWS 네트워크로 가는 트래픽만 VPN을 이용하고</p>
+<p>일반 인터넷 트래픽은 기존 인터넷 회선을 그대로 사용한다.</p>
+<p>즉,</p>
+<ul>
+<li>AWS VPC 목적지 → VPN 경유</li>
+<li>일반 웹사이트 접속 → 기존 인터넷 사용</li>
+</ul>
+<p>실습에서는 활성화하는 것이 편하다.</p>
+<hr/>
+<h2 id="106-transport-protocol">10.6 Transport protocol<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#106-transport-protocol" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>다음 중 선택한다.</p>
+<ul>
+<li>UDP</li>
+<li>TCP</li>
+</ul>
+<p>일반적으로 UDP를 많이 사용한다.</p>
+<p>이유는 성능 오버헤드가 적기 때문이다.</p>
+<hr/>
+<h2 id="107-vpn-port">10.7 VPN port<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#107-vpn-port" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>다음 중 선택한다.</p>
+<ul>
+<li>443</li>
+<li>1194</li>
+</ul>
+<p>실습에서는 보통 1194를 많이 사용한다.</p>
+<p>다만 방화벽 환경에 따라 443이 더 유리할 수도 있다.</p>
+<hr/>
+<h1 id="11-대상-네트워크-연결">11. 대상 네트워크 연결<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#11-대상-네트워크-연결" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Client VPN Endpoint를 만들었다고 해서 바로 VPC에 들어갈 수 있는 것은 아니다.</p>
+<p>어느 서브넷과 연결할지 지정해야 한다.</p>
+<p>이 작업이 <strong>Target Network Association</strong> 이다.</p>
+<hr/>
+<h2 id="111-설정-위치">11.1 설정 위치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#111-설정-위치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>Client VPN Endpoint 선택
+→ Associate target network
+</code></pre>
+<hr/>
+<h2 id="112-설정-항목">11.2 설정 항목<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#112-설정-항목" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>VPC 선택</li>
+<li>Subnet 선택</li>
+<li>Security Group 선택</li>
+</ul>
+<hr/>
+<h2 id="113-개념-설명">11.3 개념 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#113-개념-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>대상 네트워크 연결은 VPN 사용자가 AWS 내부로 진입할 때 어느 VPC의 어느 서브넷을 기준으로 연결할지 정하는 작업이다.</p>
+<p>즉, Endpoint만 만들어서는 길이 열린 것이 아니고, 어느 네트워크로 보낼지를 연결해야 한다.</p>
+<hr/>
+<h1 id="12-권한부여-규칙-생성">12. 권한부여 규칙 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12-권한부여-규칙-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>대상 네트워크를 연결했더라도 사용자가 어떤 네트워크 대역까지 접근 가능한지는 별도로 허용해야 한다.</p>
+<p>이 작업이 <strong>Authorization Rule</strong> 이다.</p>
+<hr/>
+<h2 id="121-설정-위치">12.1 설정 위치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#121-설정-위치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<hr/>
+<h2 id="122-예시">12.2 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#122-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>VPC CIDR이 <code>10.10.0.0/16</code> 이라면 다음처럼 설정할 수 있다.</p>
+<pre><code>Destination network to enable access : 10.10.0.0/16
+Grant access to : Allow access to all users
+</code></pre>
+<hr/>
+<h2 id="123-개념-정리">12.3 개념 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#123-개념-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>Target Network Association
+→ 어느 VPC / Subnet 쪽으로 연결할지 결정</li>
+<li>Authorization Rule
+→ 어떤 목적지 네트워크에 접근할 수 있을지 허용</li>
+</ul>
+<p>이 둘은 서로 다른 역할이다.</p>
+<hr/>
+<h1 id="13-보안-그룹-설정">13. 보안 그룹 설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#13-보안-그룹-설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>VPN이 연결되어도 실제 EC2 접속이 안 되는 경우가 많다.</p>
+<p>대부분 보안 그룹 문제다.</p>
+<hr/>
+<h2 id="131-private-ec2-보안-그룹-예시">13.1 Private EC2 보안 그룹 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#131-private-ec2-보안-그룹-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="ssh-허용">SSH 허용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ssh-허용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>Type: SSH
+Protocol: TCP
+Port: 22
+Source: 10.250.0.0/22
+</code></pre>
+<h3 id="ping-허용">Ping 허용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ping-허용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>Type: All ICMP - IPv4
+Source: 10.250.0.0/22
+</code></pre>
+<h3 id="http-허용">HTTP 허용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#http-허용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>Type: HTTP
+Protocol: TCP
+Port: 80
+Source: 10.250.0.0/22
+</code></pre>
+<p>즉, <strong>VPN 클라이언트 IP 대역(Client CIDR)</strong> 에서 오는 트래픽을 허용해야 한다.</p>
+<hr/>
+<h1 id="14-클라이언트-구성-파일-다운로드">14. 클라이언트 구성 파일 다운로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#14-클라이언트-구성-파일-다운로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Client VPN Endpoint가 생성되고 상태가 Active가 되면</p>
+<p>클라이언트 설정 파일을 다운로드할 수 있다.</p>
+<hr/>
+<h2 id="141-메뉴-위치">14.1 메뉴 위치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#141-메뉴-위치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>Client VPN Endpoint 선택
+→ Download client configuration
+</code></pre>
+<p>파일 이름 예시</p>
+<pre><code>downloaded-client-config.ovpn
+</code></pre>
+<hr/>
+<h1 id="15-ovpn-파일-구조-이해">15. <code>.ovpn</code> 파일 구조 이해<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#15-ovpn-파일-구조-이해" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>다운로드한 파일은 대략 다음과 같은 구조를 가진다.</p>
+<pre><code>client
+dev tun
+proto udp
+remote cvpn-endpoint-xxxxxxxx.prod.clientvpn.ap-northeast-1.amazonaws.com 1194
+remote-random-hostname
+resolv-retry infinite
+nobind
+remote-cert-tls server
+cipher AES-256-GCM
+verb 3
+
+&lt;ca>
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+&lt;/ca>
+
+&lt;cert>
+
+&lt;/cert>
+
+&lt;key>
+
+&lt;/key>
+
+reneg-sec 0
+verify-x509-name myserver name
+</code></pre>
+<p>여기서 핵심은 다음 세 구간이다.</p>
+<ul>
+<li><code>&lt;ca></code> : CA 인증서</li>
+<li><code>&lt;cert></code> : 클라이언트 인증서</li>
+<li><code>&lt;key></code> : 클라이언트 개인키</li>
+</ul>
+<hr/>
+<h1 id="16-ovpn-파일-수정">16. <code>.ovpn</code> 파일 수정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#16-ovpn-파일-수정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>다운로드한 <code>.ovpn</code> 파일에는 <code>&lt;cert></code> 와 <code>&lt;key></code> 가 비어 있는 경우가 많다.</p>
+<p>여기에 생성한 클라이언트 인증서와 클라이언트 키를 넣어야 한다.</p>
+<hr/>
+<h2 id="161-ubuntu에서-클라이언트-인증서-확인">16.1 Ubuntu에서 클라이언트 인증서 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#161-ubuntu에서-클라이언트-인증서-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>cat /etc/openvpn/easy-rsa/pki/issued/client1.kyt.crt
+cat /etc/openvpn/easy-rsa/pki/private/client1.kyt.key
+</code></pre>
+<h2 id="162-windows에서-클라이언트-인증서-확인">16.2 Windows에서 클라이언트 인증서 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#162-windows에서-클라이언트-인증서-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>cat /c/openvpn/easy-rsa/pki/issued/client1.kyt.crt
+cat /c/openvpn/easy-rsa/pki/private/client1.kyt.key
+</code></pre>
+<hr/>
+<h2 id="163-붙여-넣는-위치">16.3 붙여 넣는 위치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#163-붙여-넣는-위치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p><code>.ovpn</code> 파일에서 다음처럼 수정한다.</p>
+<pre><code>&lt;cert>
+-----BEGIN CERTIFICATE-----
+클라이언트 인증서 내용
+-----END CERTIFICATE-----
+&lt;/cert>
+
+&lt;key>
+-----BEGIN PRIVATE KEY-----
+클라이언트 개인키 내용
+-----END PRIVATE KEY-----
+&lt;/key>
+</code></pre>
+<hr/>
+<h2 id="164-주의사항">16.4 주의사항<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#164-주의사항" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>BEGIN / END 줄까지 반드시 포함해야 함</li>
+<li>줄바꿈이 깨지면 안 됨</li>
+<li>다른 클라이언트의 인증서와 키를 섞으면 안 됨</li>
+<li>VS Code 같은 편집기를 사용하는 것이 좋음</li>
+</ul>
+<hr/>
+<h1 id="17-aws-vpn-client-설치">17. AWS VPN Client 설치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#17-aws-vpn-client-설치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Windows 환경에서는 AWS VPN Client를 설치해서 접속할 수 있다.</p>
+<p>실습 흐름은 다음과 같다.</p>
+<pre><code>1. AWS VPN Client 설치
+2. Profile 추가
+3. 수정한 .ovpn 파일 가져오기
+4. Connect 클릭
+</code></pre>
+<hr/>
+<h1 id="18-vpn-연결-수행">18. VPN 연결 수행<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#18-vpn-연결-수행" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="181-프로파일-추가">18.1 프로파일 추가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#181-프로파일-추가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS VPN Client를 실행한 뒤</p>
+<p>수정한 <code>.ovpn</code> 파일을 Import 한다.</p>
+<h2 id="182-연결">18.2 연결<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#182-연결" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>프로파일을 선택하고 Connect를 실행한다.</p>
+<p>정상 연결되면 사용자 PC는</p>
+<p>Client CIDR 대역의 가상 IP를 할당받는다.</p>
+<hr/>
+<h1 id="19-연결-확인">19. 연결 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#19-연결-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h2 id="191-windows에서-확인">19.1 Windows에서 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#191-windows에서-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>ipconfig
+route print
+</code></pre>
+<p>VPN 어댑터가 보이고</p>
+<p>VPC 네트워크로 가는 경로가 추가되었는지 확인한다.</p>
+<hr/>
+<h2 id="192-ubuntu에서-확인">19.2 Ubuntu에서 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#192-ubuntu에서-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>ip addr
+ip route
+</code></pre>
+<p>VPN 인터페이스와 라우팅 경로를 확인한다.</p>
+<hr/>
+<h2 id="193-private-ec2-ping-테스트">19.3 Private EC2 Ping 테스트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#193-private-ec2-ping-테스트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>예를 들어 Private EC2 IP가 <code>10.10.2.100</code> 이라면 다음처럼 확인한다.</p>
+<h3 id="windows">Windows<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#windows" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>ping 10.10.2.100
+</code></pre>
+<hr/>
+<h2 id="194-ssh-접속-테스트">19.4 SSH 접속 테스트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#194-ssh-접속-테스트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="윈도우-또는-linux-클라이언트">윈도우 또는 Linux 클라이언트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#윈도우-또는-linux-클라이언트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>ssh ubuntu@10.10.2.100
+</code></pre>
+<hr/>
+<blockquote>
+<blockquote>
+<p>Certificate Manager에서 인증서 가져오기(서버, 클라이언트)</p>
+</blockquote>
+</blockquote>
+<p><img src="../attachments/image-20.png" width="auto" height="auto" alt/></p>
+<p><img src="../attachments/image-21.png" width="auto" height="auto" alt/></p>
+<p>• 클라이언트 VPN 엔드포인트 생성</p>
+<p><img src="../attachments/image-22.png" width="auto" height="auto" alt/></p>
+<p><img src="../attachments/image-23.png" width="auto" height="auto" alt/></p>
+<ul>
+<li>클라이언트 IP CIDR은 임의의 사설주소 입력. 단 현재 연결하려는 VPC와 중복되지 않게 설정</li>
+<li>상호 인증 사용 선택</li>
+</ul>
+<p><img src="../attachments/image-24.png" width="auto" height="auto" alt/></p>
+<p><img src="../attachments/image-25.png" width="auto" height="auto" alt/></p>
+<ul>
+<li>분할터널 활성화 : VPN을 사용하지 않는 트래픽은 외부와 통신 가능하도록 설정</li>
+<li>전송프로토콜은 UDP 또는 TCP중에 선택</li>
+<li>VPN포트 443 또는 1194 중에 선택</li>
+</ul>
+<p><img src="../attachments/image-26.png" width="auto" height="auto" alt/></p>
+<ul>
+<li>대상 네트워크 연결 : 통신하려고 하는 서브넷 연결</li>
+<li>보안 그룹 : VPN연결시 필요한 포트 및 연결 후 사용할 포트 또는 프로토콜을 규칙에 적용하여 생성하고 연결</li>
+<li>권한부여규칙 : Client VPN 엔드포인트 연결시 통신할 네트워크 지정.</li>
+<li>Client VPN 엔드포인트가 활성화되기까지 시간이 걸림.</li>
+</ul>
+<p><strong>◆ 클라이언트 구성 다운로드 후 내용 수정하기</strong></p>
+<p>다운로드한 구성파일 : downloaded-client-config.ovpn</p>
+<p>client</p>
+<p>dev tun</p>
+<p>proto udp</p>
+<p>remote cvpn-endpoint-0a3e74948a1914dc6.prod.clientvpn.ap-northeast-1.amazonaws.com 1194</p>
+<p>remote-random-hostname</p>
+<p>resolv-retry infinite</p>
+<p>nobind</p>
+<p>remote-cert-tls server</p>
+<p>cipher AES-256-GCM</p>
+<p>verb 3</p>
+<ca>
+<ul>
+<li>----BEGIN CERTIFICATE-----</li>
+</ul>
+<p>MIIDSzCCAjOgAwIBAgIUKLVKyhhXvQ/7TmAFr9VRaooSsWAwDQYJKoZIhvcNAQEL</p>
+<p>BQAwFjEUMBIGA1UEAwwLRWFzeS1SU0EgQ0EwHhcNMjMxMjI1MTIzNzMyWhcNMzMx</p>
+<p>MjIyMTIzNzMyWjAWMRQwEgYDVQQDDAtFYXN5LVJTQSBDQTCCASIwDQYJKoZIhvcN</p>
+<p>AQEBBQADggEPADCCAQoCggEBAKpy2kPNMiUUCl/HnlRzL8z3kZB/0KQHa5Rer3w8</p>
+<p>ze+EYrFfwbfkmVBawRD5Dk7TtDxX25LAWTDHoc+C1nYzhHqQxVNlq5dPJA5lKW4G</p>
+<p>mD+r8NV8sb4uIUTy3JH0Szln7l1zvBUSobHdnlrdBjh3auvtVpbVIGKRPPgYhw3U</p>
+<p>yEkaTblApUit6ospuhdNHM3JSEy0U1EE07Kf7/qt7X+2JdpZLiZ18Dz1/gFz3B3U</p>
+<p>KZYopPGFWPEPeymSfW2NfO4xZkpN88CM2foahMOvRjA14Kn9+vFjoc13QWEw4Zqg</p>
+<p>iMCZJ/lc2yZcH6t15vAHuZ9rgH53/BnPrpEsnXAbZjZYUOcCAwEAAaOBkDCBjTAd</p>
+<p>BgNVHQ4EFgQU6NaMKAho6aruo7SO5J0ZLVN7FXYwUQYDVR0jBEowSIAU6NaMKAho</p>
+<p>6aruo7SO5J0ZLVN7FXahGqQYMBYxFDASBgNVBAMMC0Vhc3ktUlNBIENBghQotUrK</p>
+<p>GFe9D/tOYAWv1VFqihKxYDAMBgNVHRMEBTADAQH/MAsGA1UdDwQEAwIBBjANBgkq</p>
+<p>hkiG9w0BAQsFAAOCAQEAAd4gxhhVBHv7BJzIR62PFUo50EyB+FEwBLunVl+0GJkD</p>
+<p>j/8joN/TSGjdLsH+W6WJTV4pVJMqiwW69qXT5Pe3xJUHfqmOshqJek5maSwR/JMo</p>
+<p>K6uE1EOqut3yke4YXVyx5yDjlSghM2qiUQEWsQXo+m8pU01FLf22QFLk4LpjalP4</p>
+<p>lL/LC2TZG5af2HgdXkhLkm3J+pvwGH/Aq433tvpdTriOMV1whDn3zWiFBasbra3y</p>
+<p>hXJSJU+r0DB8R7rU87/EEGE8Z3riSF6XgIhRJEVMPHIYjneGmTgXfK3MQiRiwHBh</p>
+<p>jwVBNB9FfMPm07Dxd0gffRFC2yJESOUzPTga/2vr4g==</p>
+<ul>
+<li>----END CERTIFICATE-----</li>
+</ul>
+</ca>
+<cert>
+</cert>
+<key>
+</key>
+<p>reneg-sec 0</p>
+<p>verify-x509-name myserver name</p>
+<ul>
+<li>클라이언트 인증서 <cert> </cert>사이에 추가</li>
+<li>클라이언트 키 <key> </key> 사이에 추가 하고 저장</li>
+<li>AWS Client VPN용 클라이언트 프로그램(윈도우용) 다운로드 설치(맥, 리눅스는 별도 프로그램)</li>
+</ul>
+<p><a href="https://d20adtppz83p9s.cloudfront.net/WPF/latest/AWS_VPN_Client.msi" class="external">https://d20adtppz83p9s.cloudfront.net/WPF/latest/AWS_VPN_Client.msi<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a></p>
+<p><img src="../attachments/image-27.png" width="auto" height="auto" alt/></p>
+<p><img src="../attachments/image-28.png" width="auto" height="auto" alt/></p>
+<ul>
+<li>연결된 후 Private Subnet에 있는 EC2와 통신이 가능함.</li>
+</ul></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-53" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#aws-client-vpn-실습" data-for="aws-client-vpn-실습">AWS Client VPN 실습</a></li><li class="depth-1"><a href="#easy-rsa를-이용한-인증서-생성과-client-vpn-구성" data-for="easy-rsa를-이용한-인증서-생성과-client-vpn-구성">Easy-RSA를 이용한 인증서 생성과 Client VPN 구성</a></li><li class="depth-2"><a href="#ubuntu--windows-기준" data-for="ubuntu--windows-기준">Ubuntu / Windows 기준</a></li><li class="depth-0"><a href="#1-실습-목표" data-for="1-실습-목표">1. 실습 목표</a></li><li class="depth-0"><a href="#2-실습-구성-개요" data-for="2-실습-구성-개요">2. 실습 구성 개요</a></li><li class="depth-0"><a href="#3-사전-준비" data-for="3-사전-준비">3. 사전 준비</a></li><li class="depth-0"><a href="#4-핵심-개념-이해" data-for="4-핵심-개념-이해">4. 핵심 개념 이해</a></li><li class="depth-1"><a href="#41-왜-인증서가-필요한가" data-for="41-왜-인증서가-필요한가">4.1 왜 인증서가 필요한가</a></li><li class="depth-1"><a href="#42-easy-rsa란-무엇인가" data-for="42-easy-rsa란-무엇인가">4.2 Easy-RSA란 무엇인가</a></li><li class="depth-0"><a href="#5-ubuntu에서-easy-rsa-설치-및-인증서-생성" data-for="5-ubuntu에서-easy-rsa-설치-및-인증서-생성">5. Ubuntu에서 Easy-RSA 설치 및 인증서 생성</a></li><li class="depth-1"><a href="#51-패키지-설치" data-for="51-패키지-설치">5.1 패키지 설치</a></li><li class="depth-2"><a href="#명령-설명" data-for="명령-설명">명령 설명</a></li><li class="depth-2"><a href="#sudo-apt-get-update" data-for="sudo-apt-get-update">sudo apt-get update</a></li><li class="depth-2"><a href="#sudo-apt-get-install-easy-rsa--y" data-for="sudo-apt-get-install-easy-rsa--y">sudo apt-get install easy-rsa -y</a></li><li class="depth-1"><a href="#52-작업-디렉터리-생성" data-for="52-작업-디렉터리-생성">5.2 작업 디렉터리 생성</a></li><li class="depth-2"><a href="#명령-설명-1" data-for="명령-설명-1">명령 설명</a></li><li class="depth-2"><a href="#mkdir--p-etcopenvpneasy-rsa" data-for="mkdir--p-etcopenvpneasy-rsa">mkdir -p /etc/openvpn/easy-rsa</a></li><li class="depth-2"><a href="#cp--r-usrshareeasy-rsa-etcopenvpneasy-rsa" data-for="cp--r-usrshareeasy-rsa-etcopenvpneasy-rsa">cp -r /usr/share/easy-rsa/* /etc/openvpn/easy-rsa/</a></li><li class="depth-2"><a href="#cd-etcopenvpneasy-rsa" data-for="cd-etcopenvpneasy-rsa">cd /etc/openvpn/easy-rsa</a></li><li class="depth-1"><a href="#53-pki-초기화" data-for="53-pki-초기화">5.3 PKI 초기화</a></li><li class="depth-2"><a href="#설명" data-for="설명">설명</a></li><li class="depth-1"><a href="#54-ca-인증서-생성" data-for="54-ca-인증서-생성">5.4 CA 인증서 생성</a></li><li class="depth-2"><a href="#설명-1" data-for="설명-1">설명</a></li><li class="depth-1"><a href="#55-클라이언트-인증서-생성" data-for="55-클라이언트-인증서-생성">5.5 클라이언트 인증서 생성</a></li><li class="depth-2"><a href="#설명-2" data-for="설명-2">설명</a></li><li class="depth-1"><a href="#56-서버-인증서-생성" data-for="56-서버-인증서-생성">5.6 서버 인증서 생성</a></li><li class="depth-2"><a href="#설명-3" data-for="설명-3">설명</a></li><li class="depth-1"><a href="#57-생성-결과-확인" data-for="57-생성-결과-확인">5.7 생성 결과 확인</a></li><li class="depth-0"><a href="#6-windows에서-easy-rsa-설치-및-인증서-생성" data-for="6-windows에서-easy-rsa-설치-및-인증서-생성">6. Windows에서 Easy-RSA 설치 및 인증서 생성</a></li><li class="depth-2"><a href="#61-easy-rsa-압축-해제" data-for="61-easy-rsa-압축-해제">6.1 Easy-RSA 압축 해제</a></li><li class="depth-2"><a href="#62-cmd-실행-후-경로-이동" data-for="62-cmd-실행-후-경로-이동">6.2 CMD 실행 후 경로 이동</a></li><li class="depth-2"><a href="#63-easy-rsa-시작-배치-파일-실행" data-for="63-easy-rsa-시작-배치-파일-실행">6.3 Easy-RSA 시작 배치 파일 실행</a></li><li class="depth-2"><a href="#64-pki-초기화" data-for="64-pki-초기화">6.4 PKI 초기화</a></li><li class="depth-2"><a href="#65-ca-생성" data-for="65-ca-생성">6.5 CA 생성</a></li><li class="depth-2"><a href="#66-클라이언트-인증서-생성" data-for="66-클라이언트-인증서-생성">6.6 클라이언트 인증서 생성</a></li><li class="depth-2"><a href="#67-서버-인증서-생성" data-for="67-서버-인증서-생성">6.7 서버 인증서 생성</a></li><li class="depth-0"><a href="#7-생성된-파일의-역할-정리" data-for="7-생성된-파일의-역할-정리">7. 생성된 파일의 역할 정리</a></li><li class="depth-0"><a href="#8-acm에-서버-인증서-가져오기" data-for="8-acm에-서버-인증서-가져오기">8. ACM에 서버 인증서 가져오기</a></li><li class="depth-1"><a href="#81-acm-이동" data-for="81-acm-이동">8.1 ACM 이동</a></li><li class="depth-1"><a href="#82-입력-항목" data-for="82-입력-항목">8.2 입력 항목</a></li><li class="depth-2"><a href="#certificate-body" data-for="certificate-body">Certificate body</a></li><li class="depth-2"><a href="#certificate-private-key" data-for="certificate-private-key">Certificate private key</a></li><li class="depth-2"><a href="#certificate-chain" data-for="certificate-chain">Certificate chain</a></li><li class="depth-1"><a href="#93-파일-내용-확인-예시" data-for="93-파일-내용-확인-예시">9.3 파일 내용 확인 예시</a></li><li class="depth-0"><a href="#10-aws-client-vpn-endpoint-생성" data-for="10-aws-client-vpn-endpoint-생성">10. AWS Client VPN Endpoint 생성</a></li><li class="depth-1"><a href="#101-메뉴-이동" data-for="101-메뉴-이동">10.1 메뉴 이동</a></li><li class="depth-1"><a href="#102-주요-설정값" data-for="102-주요-설정값">10.2 주요 설정값</a></li><li class="depth-2"><a href="#name-tag" data-for="name-tag">Name tag</a></li><li class="depth-2"><a href="#client-ipv4-cidr" data-for="client-ipv4-cidr">Client IPv4 CIDR</a></li><li class="depth-2"><a href="#중요-설명" data-for="중요-설명">중요 설명</a></li><li class="depth-1"><a href="#103-server-certificate-arn" data-for="103-server-certificate-arn">10.3 Server certificate ARN</a></li><li class="depth-1"><a href="#104-authentication-options" data-for="104-authentication-options">10.4 Authentication options</a></li><li class="depth-1"><a href="#105-split-tunnel-활성화" data-for="105-split-tunnel-활성화">10.5 Split-tunnel 활성화</a></li><li class="depth-1"><a href="#106-transport-protocol" data-for="106-transport-protocol">10.6 Transport protocol</a></li><li class="depth-1"><a href="#107-vpn-port" data-for="107-vpn-port">10.7 VPN port</a></li><li class="depth-0"><a href="#11-대상-네트워크-연결" data-for="11-대상-네트워크-연결">11. 대상 네트워크 연결</a></li><li class="depth-1"><a href="#111-설정-위치" data-for="111-설정-위치">11.1 설정 위치</a></li><li class="depth-1"><a href="#112-설정-항목" data-for="112-설정-항목">11.2 설정 항목</a></li><li class="depth-1"><a href="#113-개념-설명" data-for="113-개념-설명">11.3 개념 설명</a></li><li class="depth-0"><a href="#12-권한부여-규칙-생성" data-for="12-권한부여-규칙-생성">12. 권한부여 규칙 생성</a></li><li class="depth-1"><a href="#121-설정-위치" data-for="121-설정-위치">12.1 설정 위치</a></li><li class="depth-1"><a href="#122-예시" data-for="122-예시">12.2 예시</a></li><li class="depth-1"><a href="#123-개념-정리" data-for="123-개념-정리">12.3 개념 정리</a></li><li class="depth-0"><a href="#13-보안-그룹-설정" data-for="13-보안-그룹-설정">13. 보안 그룹 설정</a></li><li class="depth-1"><a href="#131-private-ec2-보안-그룹-예시" data-for="131-private-ec2-보안-그룹-예시">13.1 Private EC2 보안 그룹 예시</a></li><li class="depth-2"><a href="#ssh-허용" data-for="ssh-허용">SSH 허용</a></li><li class="depth-2"><a href="#ping-허용" data-for="ping-허용">Ping 허용</a></li><li class="depth-2"><a href="#http-허용" data-for="http-허용">HTTP 허용</a></li><li class="depth-0"><a href="#14-클라이언트-구성-파일-다운로드" data-for="14-클라이언트-구성-파일-다운로드">14. 클라이언트 구성 파일 다운로드</a></li><li class="depth-1"><a href="#141-메뉴-위치" data-for="141-메뉴-위치">14.1 메뉴 위치</a></li><li class="depth-0"><a href="#15-ovpn-파일-구조-이해" data-for="15-ovpn-파일-구조-이해">15. .ovpn 파일 구조 이해</a></li><li class="depth-0"><a href="#16-ovpn-파일-수정" data-for="16-ovpn-파일-수정">16. .ovpn 파일 수정</a></li><li class="depth-1"><a href="#161-ubuntu에서-클라이언트-인증서-확인" data-for="161-ubuntu에서-클라이언트-인증서-확인">16.1 Ubuntu에서 클라이언트 인증서 확인</a></li><li class="depth-1"><a href="#162-windows에서-클라이언트-인증서-확인" data-for="162-windows에서-클라이언트-인증서-확인">16.2 Windows에서 클라이언트 인증서 확인</a></li><li class="depth-1"><a href="#163-붙여-넣는-위치" data-for="163-붙여-넣는-위치">16.3 붙여 넣는 위치</a></li><li class="depth-1"><a href="#164-주의사항" data-for="164-주의사항">16.4 주의사항</a></li><li class="depth-0"><a href="#17-aws-vpn-client-설치" data-for="17-aws-vpn-client-설치">17. AWS VPN Client 설치</a></li><li class="depth-0"><a href="#18-vpn-연결-수행" data-for="18-vpn-연결-수행">18. VPN 연결 수행</a></li><li class="depth-1"><a href="#181-프로파일-추가" data-for="181-프로파일-추가">18.1 프로파일 추가</a></li><li class="depth-1"><a href="#182-연결" data-for="182-연결">18.2 연결</a></li><li class="depth-0"><a href="#19-연결-확인" data-for="19-연결-확인">19. 연결 확인</a></li><li class="depth-1"><a href="#191-windows에서-확인" data-for="191-windows에서-확인">19.1 Windows에서 확인</a></li><li class="depth-1"><a href="#192-ubuntu에서-확인" data-for="192-ubuntu에서-확인">19.2 Ubuntu에서 확인</a></li><li class="depth-1"><a href="#193-private-ec2-ping-테스트" data-for="193-private-ec2-ping-테스트">19.3 Private EC2 Ping 테스트</a></li><li class="depth-2"><a href="#windows" data-for="windows">Windows</a></li><li class="depth-1"><a href="#194-ssh-접속-테스트" data-for="194-ssh-접속-테스트">19.4 SSH 접속 테스트</a></li><li class="depth-2"><a href="#윈도우-또는-linux-클라이언트" data-for="윈도우-또는-linux-클라이언트">윈도우 또는 Linux 클라이언트</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

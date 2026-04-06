@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>Redis 실습</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="Redis 실습"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Redis 실습"/><meta name="twitter:description" content="Redis 실습 0."/><meta property="og:description" content="Redis 실습 0."/><meta property="og:image:alt" content="Redis 실습 0."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/Redis-실습"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/Redis-실습"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="Redis 실습 0."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/Redis-실습"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-117"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-117" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>Redis 실습</a></div></nav><h1 class="article-title">Redis 실습</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>15 min read</span></p></div></div><article class="popover-hint"><h1 id="redis-실습">Redis 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#redis-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="0-실습-목표-및-환경">0. 실습 목표 및 환경<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#0-실습-목표-및-환경" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="목표">목표<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#목표" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ol>
+<li>Ubuntu에 Redis 설치 및 서비스 운영(systemd)</li>
+<li><code>redis-cli</code>로 핵심 명령 실습(STRING/LIST/SET/HASH/ZSET)</li>
+<li>TTL/캐시 패턴(캐시 미스/갱신/무효화) 이해</li>
+<li>RDB/AOF 영속화 설정 및 복구 실습</li>
+<li>외부 노출 시 필수 보안 설정(바인딩/비밀번호/방화벽)</li>
+<li>운영 관점 점검(로그/메모리/Slowlog/지표)</li>
+</ol>
+<h3 id="준비물">준비물<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#준비물" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>Ubuntu VM 1대 (권장: 2 vCPU / 2GB RAM 이상)</li>
+<li>sudo 권한</li>
+<li>터미널 사용</li>
+</ul>
+<hr/>
+<h2 id="1-redis-설치-및-서비스-확인">1. Redis 설치 및 서비스 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-redis-설치-및-서비스-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="1-1-패키지-설치">1-1) 패키지 설치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-1-패키지-설치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> apt</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> update</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> apt</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> install</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -y</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line> </span></code></pre></figure>
+<h3 id="1-2-서비스-상태-확인">1-2) 서비스 상태 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-2-서비스-상태-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> status</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --no-pager</span></span>
+<span data-line> </span></code></pre></figure>
+<h3 id="1-3-redis-버전접속-테스트">1-3) Redis 버전/접속 테스트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-3-redis-버전접속-테스트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-server</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --version</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ping</span></span>
+<span data-line> </span></code></pre></figure>
+<ul>
+<li>기대 출력: <code>PONG</code></li>
+</ul>
+<h3 id="1-4-포트-리스닝-확인기본-6379">1-4) 포트 리스닝 확인(기본 6379)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-4-포트-리스닝-확인기본-6379" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">ss</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -lntp</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> grep</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 6379</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> ||</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> lsof</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -i:6379</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h2 id="2-redis-cli-기본-사용법">2. redis-cli 기본 사용법<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-redis-cli-기본-사용법" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="2-1-접속">2-1) 접속<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-1-접속" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span></span>
+<span data-line> </span></code></pre></figure>
+<h3 id="2-2-도움말명령-탐색">2-2) 도움말/명령 탐색<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-2-도움말명령-탐색" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>HELP
+COMMAND COUNT
+COMMAND INFO GET SET
+
+</code></pre>
+<h3 id="2-3-서버-정보설정-확인">2-3) 서버 정보/설정 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-3-서버-정보설정-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>INFO
+INFO server
+INFO memory
+CONFIG GET *
+CONFIG GET dir
+CONFIG GET appendonly   => AOF기능 활성화 여부 확인
+</code></pre>
+<h3 id="2-4-키-탐색-주의">2-4) 키 탐색 주의<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-4-키-탐색-주의" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>운영에서는 <code>KEYS *</code> 금지(블로킹). 실습에서는 데이터가 적으므로 비교 용도만.</p>
+<pre><code>KEYS *
+SCAN 0 MATCH * COUNT 10    => 10개씩 조회
+</code></pre>
+<hr/>
+<h2 id="3-redis-데이터-모델자료구조-실습">3. Redis 데이터 모델(자료구조) 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-redis-데이터-모델자료구조-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<hr/>
+<h3 id="실습-전-데이터-초기화">실습 전, 데이터 초기화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#실습-전-데이터-초기화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>FLUSHDB   : 현재 DB 삭제
+FLUSHALL  : 모든 DB 삭제
+</code></pre>
+<p><strong>설명</strong></p>
+<ul>
+<li>현재 선택된 Redis DB(기본 0번)에 저장된 모든 키를 삭제. DB는 0~15까지 16개가 있음.</li>
+<li>실습을 처음부터 깨끗한 상태로 시작하기 위함</li>
+<li><code>FLUSHALL</code>은 모든 DB를 삭제하므로 실습에서는 <code>FLUSHDB</code> 권장</li>
+</ul>
+<hr/>
+<p><a href="../mgz/Redis-데이터모델" class="internal alias" data-slug="mgz/Redis-데이터모델">Redis 데이터모델</a></p>
+<h2 id="3-1-string">3-1) STRING<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-1-string" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>SET user:1:name &quot;kim&quot;
+</code></pre>
+<ul>
+<li><code>user:1:name</code>이라는 키에 문자열 <code>&quot;kim&quot;</code> 저장</li>
+<li>동일한 키가 있으면 <strong>덮어쓰기</strong></li>
+</ul>
+<pre><code>GET user:1:name
+</code></pre>
+<ul>
+<li>해당 키에 저장된 값을 조회</li>
+<li>결과: <code>&quot;kim&quot;</code></li>
+</ul>
+<hr/>
+<pre><code>INCR page:view
+</code></pre>
+<ul>
+<li>
+<p><code>page:view</code> 값을 <strong>1 증가</strong></p>
+</li>
+<li>
+<p>키가 없으면 <code>0</code>으로 간주한 뒤 <code>1</code>로 생성</p>
+</li>
+<li>
+<p>문자열 타입이지만 <strong>숫자 형태의 문자열</strong>이어야 함</p>
+</li>
+<li>
+<p>한 번 더 증가 → 누적 증가 확인</p>
+</li>
+</ul>
+<pre><code>INCR page:view
+</code></pre>
+<ul>
+<li>현재 조회수(카운터) 값 확인</li>
+</ul>
+<pre><code>GET page:view
+</code></pre>
+<hr/>
+<ul>
+<li>여러 키를 <strong>한 번에 저장</strong></li>
+<li>내부적으로 원자적(atomic)으로 실행</li>
+</ul>
+<pre><code>MSET k1 v1 k2 v2
+</code></pre>
+<ul>
+<li>여러 키를 한 번에 조회</li>
+<li>결과는 입력한 순서대로 반환</li>
+</ul>
+<pre><code>MGET k1 k2
+</code></pre>
+<hr/>
+<h3 id="실습">실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>
+<p><code>SET counter 0</code> 실행</p>
+</li>
+<li>
+<p><code>INCR counter</code>를 5회 실행</p>
+</li>
+<li>
+<p>최종 값이 <code>5</code>인지 확인</p>
+<p>👉 <strong>조회수, 접속 수 카운터에 사용되는 패턴</strong></p>
+</li>
+</ul>
+<hr/>
+<h2 id="3-2-list-큐--스택">3-2) LIST (큐 / 스택)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-2-list-큐--스택" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>기존 리스트 키 삭제 (실습 재실행 대비)</li>
+</ul>
+<pre><code>DEL queue:email
+</code></pre>
+<ul>
+<li>리스트 <strong>왼쪽(Head)</strong> 에 데이터 삽입</li>
+<li>여러 값일 경우 왼쪽부터 순차 삽입</li>
+<li>최종 순서: <code>mail3 → mail2 → mail1</code></li>
+</ul>
+<pre><code>LPUSH queue:email &quot;mail1&quot; &quot;mail2&quot; &quot;mail3&quot;
+</code></pre>
+<ul>
+<li>리스트 전체 조회</li>
+<li><code>0</code> = 첫 번째, <code>1</code> = 마지막</li>
+</ul>
+<pre><code>LRANGE queue:email 0 -1
+</code></pre>
+<hr/>
+<ul>
+<li>리스트 <strong>오른쪽(Tail)</strong> 에서 데이터 하나 제거 후 반환</li>
+<li>큐(FIFO) 구조에서 <strong>꺼내기</strong> 동작</li>
+</ul>
+<pre><code>RPOP queue:email
+
+</code></pre>
+<ul>
+<li>pop 이후 남은 데이터 확인</li>
+</ul>
+<pre><code>LRANGE queue:email 0 -1
+</code></pre>
+<hr/>
+<h3 id="블로킹-pop-워크-큐-스타일">블로킹 POP (워크 큐 스타일)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#블로킹-pop-워크-큐-스타일" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="터미널-a">터미널 A<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#터미널-a" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span></span></code></pre></figure>
+<ul>
+<li><code>queue:job</code> 리스트에 값이 들어올 때까지 <strong>대기</strong></li>
+<li><code>0</code>은 무한 대기 의미</li>
+<li>작업 큐(worker) 구현 시 사용</li>
+</ul>
+<pre><code>BLPOP queue:job 0
+</code></pre>
+<h3 id="터미널-b">터미널 B<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#터미널-b" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span></span></code></pre></figure>
+<pre><code>LPUSH queue:job &quot;job1&quot;
+</code></pre>
+<ul>
+<li>값이 들어오는 순간, 터미널 A가 즉시 값을 받음</li>
+</ul>
+<hr/>
+<h3 id="과제">과제<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#과제" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li><code>RPUSH</code>로 데이터 추가</li>
+<li><code>LPOP</code>으로 데이터 제거</li>
+<li><strong>FIFO 큐 구조 직접 구성해보기</strong></li>
+</ul>
+<hr/>
+<h2 id="3-3-set-중복-없는-집합">3-3) SET (중복 없는 집합)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-3-set-중복-없는-집합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>집합에 값 추가</li>
+<li><code>&quot;kim&quot;</code>은 중복이므로 <strong>한 번만 저장</strong></li>
+</ul>
+<pre><code>SADD class:students &quot;kim&quot; &quot;lee&quot; &quot;park&quot; &quot;kim&quot;
+</code></pre>
+<ul>
+<li>집합에 저장된 모든 값 조회</li>
+<li><strong>순서는 보장되지 않음</strong></li>
+</ul>
+<pre><code>SMEMBERS class:students
+</code></pre>
+<ul>
+<li><code>&quot;kim&quot;</code>이 집합에 있는지 확인</li>
+<li>결과: <code>1</code>(있음), <code>0</code>(없음)</li>
+</ul>
+<pre><code>SISMEMBER class:students &quot;kim&quot;
+</code></pre>
+<ul>
+<li>집합에 포함된 원소 개수 반환</li>
+</ul>
+<pre><code>SCARD class:students
+</code></pre>
+<ul>
+<li><code>&quot;park&quot;</code>를 집합에서 제거</li>
+</ul>
+<pre><code>SREM class:students &quot;park&quot;
+
+</code></pre>
+<ul>
+<li>제거 후 최종 상태 확인</li>
+</ul>
+<pre><code>SMEMBERS class:students
+
+</code></pre>
+<hr/>
+<h3 id="집합-연산">집합 연산<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#집합-연산" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>두 개의 집합 생성</li>
+</ul>
+<pre><code>SADD class:A &quot;kim&quot; &quot;lee&quot;
+SADD class:B &quot;lee&quot; &quot;choi&quot;
+</code></pre>
+<ul>
+<li>교집합 (공통 요소) → <code>&quot;lee&quot;</code></li>
+</ul>
+<pre><code>SINTER class:A class:B
+</code></pre>
+<ul>
+<li>합집합 (전체 요소)</li>
+</ul>
+<pre><code>SUNION class:A class:B
+</code></pre>
+<ul>
+<li>차집합 (A에는 있고 B에는 없는 값)</li>
+</ul>
+<pre><code>SDIFF class:A class:B
+</code></pre>
+<hr/>
+<h2 id="3-4-hash-객체--레코드">3-4) HASH (객체 / 레코드)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-4-hash-객체--레코드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>하나의 키(<code>user:1</code>)에 여러 필드-값 저장</li>
+<li>객체(JSON)와 유사한 구조</li>
+</ul>
+<pre><code>HSET user:1 name &quot;kim&quot; age &quot;29&quot; role &quot;student&quot;
+</code></pre>
+<ul>
+<li>특정 필드 값만 조회</li>
+</ul>
+<pre><code>HGET user:1 name
+</code></pre>
+<ul>
+<li>해당 키의 모든 필드와 값 조회</li>
+</ul>
+<pre><code>HGETALL user:1
+</code></pre>
+<ul>
+<li><code>login_count</code> 필드를 1 증가</li>
+<li>필드가 없으면 <code>0</code>으로 간주 후 증가</li>
+</ul>
+<pre><code>HINCRBY user:1 login_count 1
+</code></pre>
+<ul>
+<li>누적 증가 확인</li>
+</ul>
+<pre><code>HINCRBY user:1 login_count 1
+</code></pre>
+<ul>
+<li>최종 로그인 횟수 조회</li>
+</ul>
+<pre><code>HGET user:1 login_count
+</code></pre>
+<hr/>
+<h3 id="과제-1">과제<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#과제-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li><code>user:2</code> 생성</li>
+<li>필드 3개 이상 저장(job:sa, team:cloud, floor:3</li>
+<li><code>HGETALL user:2</code> 결과 확인</li>
+</ul>
+<hr/>
+<h2 id="3-5-zset-정렬된-집합-랭킹--점수">3-5) ZSET (정렬된 집합: 랭킹 / 점수)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-5-zset-정렬된-집합-랭킹--점수" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li><code>ranking</code>이라는 ZSET에 데이터 추가</li>
+<li>숫자(score)를 기준으로 자동 정렬됨</li>
+</ul>
+<pre><code>ZADD ranking 100 &quot;alice&quot; 80 &quot;bob&quot; 120 &quot;chris&quot;
+</code></pre>
+<ul>
+<li><strong>점수 오름차순</strong> 정렬 결과 조회</li>
+</ul>
+<pre><code>ZRANGE ranking 0 -1 WITHSCORES
+</code></pre>
+<ul>
+<li><strong>점수 내림차순</strong> 정렬 결과 조회 (랭킹용)</li>
+</ul>
+<pre><code>ZREVRANGE ranking 0 -1 WITHSCORES
+</code></pre>
+<hr/>
+<ul>
+<li><code>&quot;bob&quot;</code>의 점수를 <code>+30</code> 증가</li>
+</ul>
+<pre><code>ZINCRBY ranking 30 &quot;bob&quot;
+</code></pre>
+<ul>
+<li>점수 변경 후 순위 자동 재정렬 확인</li>
+</ul>
+<pre><code>ZREVRANGE ranking 0 -1 WITHSCORES
+</code></pre>
+<hr/>
+<h3 id="top-n-조회">Top-N 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#top-n-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>점수가 높은 순으로 <strong>상위 3개</strong> 조회</li>
+<li>Top-N 랭킹 조회의 대표적인 패턴</li>
+</ul>
+<pre><code>ZREVRANGE ranking 0 2 WITHSCORES
+</code></pre>
+<hr/>
+<h2 id="4-ttl과-캐시-동작-이해">4. TTL과 캐시 동작 이해<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-ttl과-캐시-동작-이해" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="4-1-ttl-기본">4-1) TTL 기본<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-1-ttl-기본" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>세션 데이터 저장</li>
+</ul>
+<pre><code>SET session:abc &quot;user1&quot;
+</code></pre>
+<ul>
+<li>60초 뒤 자동 삭제 설정</li>
+</ul>
+<pre><code>EXPIRE session:abc 60
+</code></pre>
+<ul>
+<li>남은 TTL 시간(초 단위) 확인</li>
+</ul>
+<pre><code>TTL session:abc
+</code></pre>
+<ul>
+<li>TTL 만료 전이면 값 반환</li>
+<li>만료 후면 <code>(nil)</code> 반환</li>
+</ul>
+<pre><code>GET session:abc
+</code></pre>
+<hr/>
+<h3 id="4-2-setex--psetex">4-2) SETEX / PSETEX<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-2-setex--psetex" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>값을 저장하면서 TTL(초) 동시에 설정</li>
+</ul>
+<pre><code>SETEX otp:001 30 &quot;123456&quot;
+
+</code></pre>
+<ul>
+<li>남은 시간 확인</li>
+</ul>
+<pre><code>TTL otp:001
+</code></pre>
+<ul>
+<li>TTL을 <strong>밀리초(ms)</strong> 단위로 설정</li>
+</ul>
+<pre><code>PSETEX otp:ms 5000 &quot;999999&quot;
+</code></pre>
+<ul>
+<li>남은 시간을 ms 단위로 확인</li>
+</ul>
+<pre><code>PTTL otp:ms
+</code></pre>
+<hr/>
+<h3 id="4-3-캐시-패턴-실습-수동-시뮬레이션">4-3) 캐시 패턴 실습 (수동 시뮬레이션)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-3-캐시-패턴-실습-수동-시뮬레이션" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p><strong>상황: DB 조회 결과를 Redis에 10초 캐싱</strong></p>
+<ul>
+<li>기존 캐시 삭제</li>
+</ul>
+<pre><code>DEL cache:product:100
+</code></pre>
+<ul>
+<li>값 없음 → <strong>캐시 미스(Cache Miss)</strong></li>
+</ul>
+<pre><code>GET cache:product:100
+</code></pre>
+<ul>
+<li>DB 조회 결과를 Redis에 저장</li>
+</ul>
+<pre><code>SET cache:product:100 &quot;{'name':'mouse','price':12000}&quot;
+
+</code></pre>
+<ul>
+<li>10초 뒤 자동 삭제</li>
+</ul>
+<pre><code>EXPIRE cache:product:100 10
+</code></pre>
+<ul>
+<li>캐시 만료까지 남은 시간 확인</li>
+</ul>
+<pre><code>TTL cache:product:100
+</code></pre>
+<ul>
+<li>TTL 만료 전 → <strong>캐시 히트(Cache Hit)</strong></li>
+</ul>
+<pre><code>GET cache:product:100
+</code></pre>
+<hr/>
+<p><strong>과제</strong></p>
+<ul>
+<li>TTL 만료 후 다시 GET 했을 때 값을 확인하고, 재캐싱을 수행하시오.</li>
+</ul>
+<hr/>
+<h2 id="5-영속화persistence-rdb--aof">5. 영속화(Persistence): RDB / AOF<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-영속화persistence-rdb--aof" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Redis 설정 파일 위치(우분투 패키지 기본):</p>
+<ul>
+<li><code>/etc/redis/redis.conf</code></li>
+<li>데이터 디렉터리: 보통 <code>/var/lib/redis</code></li>
+</ul>
+<h3 id="5-1-현재-설정-확인">5-1) 현재 설정 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-1-현재-설정-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> grep</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -E</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;^(save|appendonly|appendfsync|dir|dbfilename)&quot;</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;^(save|appendonly|appendfsync|dir|dbfilename)&quot;</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span></code></pre></figure>
+<p>또는 redis-cli에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> save</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> appendonly</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dir</span></span></code></pre></figure>
+<hr/>
+<h3 id="5-2-rdb-스냅샷기본">5-2) RDB 스냅샷(기본)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-2-rdb-스냅샷기본" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>수동 저장:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> SAVE</span></span></code></pre></figure>
+<p>백그라운드 저장:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> BGSAVE</span></span></code></pre></figure>
+<p>RDB 파일 위치 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dir</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> dbfilename</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ls</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -al</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /var/lib/redis</span></span></code></pre></figure>
+<p><strong>복구 실습(안전하게 진행)</strong></p>
+<ol>
+<li>샘플 데이터 생성</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> FLUSHDB</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> rdb:test</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;hello&quot;</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> BGSAVE</span></span>
+<span data-line> </span></code></pre></figure>
+<ol>
+<li>Redis 중지 후 데이터 파일 확인</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> stop</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ls</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -al</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /var/lib/redis</span></span>
+<span data-line> </span></code></pre></figure>
+<ol>
+<li>Redis 재시작 후 데이터 확인</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> start</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> rdb:test</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h3 id="5-3-aof-활성화권장-데이터-중요-시">5-3) AOF 활성화(권장: 데이터 중요 시)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-3-aof-활성화권장-데이터-중요-시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ol>
+<li>설정 변경</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> cp</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf.bak</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> sed</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -i</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 's/^appendonly no/appendonly yes/'</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> sed</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -i</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 's/^# appendfsync everysec/appendfsync everysec/'</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line> </span></code></pre></figure>
+<ol>
+<li>서비스 재시작</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> restart</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line> </span></code></pre></figure>
+<ol>
+<li>AOF 파일 생성 확인</li>
+</ol>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ls</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -al</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /var/lib/redis</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> CONFIG</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> appendonly</span></span>
+<span data-line> </span></code></pre></figure>
+<p><strong>AOF 재작성(압축)</strong></p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> BGREWRITEAOF</span></span>
+<span data-line> </span></code></pre></figure>
+<p><strong>과제</strong></p>
+<ul>
+<li>AOF 켠 상태에서 키 3개 저장 후 재시작해도 남아있는지 검증</li>
+</ul>
+<hr/>
+<h2 id="6-운영-관점-필수-점검메모리모니터링슬로우로그">6. 운영 관점 필수 점검(메모리/모니터링/슬로우로그)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-운영-관점-필수-점검메모리모니터링슬로우로그" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="6-1-메모리-확인">6-1) 메모리 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-1-메모리-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>INFO memory
+MEMORY STATS
+MEMORY USAGE user:1
+
+</code></pre>
+<h3 id="6-2-실시간-모니터링주의-운영에서-과다-사용-금지">6-2) 실시간 모니터링(주의: 운영에서 과다 사용 금지)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-2-실시간-모니터링주의-운영에서-과다-사용-금지" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> MONITOR</span></span>
+<span data-line> </span></code></pre></figure>
+<h3 id="6-3-slowlog">6-3) Slowlog<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-3-slowlog" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>CONFIG SET slowlog-log-slower-than 10000
+CONFIG SET slowlog-max-len 128
+SLOWLOG LEN
+SLOWLOG GET 10
+
+</code></pre>
+<h3 id="6-4-클라이언트연결-확인">6-4) 클라이언트/연결 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-4-클라이언트연결-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<pre><code>INFO clients
+CLIENT LIST
+
+</code></pre>
+<hr/>
+<h2 id="7-보안-기본실습-환경-기준">7. 보안 기본(실습 환경 기준)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-보안-기본실습-환경-기준" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="7-1-기본-바인딩접근-제한-확인">7-1) 기본 바인딩/접근 제한 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-1-기본-바인딩접근-제한-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> grep</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -E</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;^(bind|protected-mode|requirepass)&quot;</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line> </span></code></pre></figure>
+<ul>
+<li>실습 로컬에서만 쓸 거면: <code>bind 127.0.0.1 ::1</code> 유지 권장</li>
+<li>외부 접속 허용은 매우 신중(비밀번호 + 방화벽 + 네트워크 분리 전제)</li>
+</ul>
+<h3 id="7-2-비밀번호-설정requirepass">7-2) 비밀번호 설정(requirepass)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-2-비밀번호-설정requirepass" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> sed</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -i</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 's/^# requirepass .*/requirepass StrongPassw0rd!/'</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> restart</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line> </span></code></pre></figure>
+<p>접속 테스트:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ping</span></span>
+<span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># (NOAUTH 에러 기대)</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 'StrongPassw0rd!'</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ping</span></span>
+<span data-line> </span></code></pre></figure>
+<h3 id="7-3-ufw-방화벽외부-차단">7-3) UFW 방화벽(외부 차단)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-3-ufw-방화벽외부-차단" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> status</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> allow</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> OpenSSH</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> enable</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> deny</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 6379/tcp</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> status</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h2 id="8-복제replication-실습-2대-vm-또는-2개-인스턴스">8. 복제(Replication) 실습: 2대 VM 또는 2개 인스턴스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-복제replication-실습-2대-vm-또는-2개-인스턴스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>아래는 <strong>노션에 그대로 붙여넣기 가능한 Redis Master–Replica 복제 실습 교안</strong>입니다.</p>
+<p>(우분투 기준, 2대 VM 또는 1대에서 포트만 다르게 2인스턴스 모두 제공)</p>
+<hr/>
+<h2 id="0-실습-준비">0. 실습 준비<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#0-실습-준비" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h2 id="권장-환경">권장 환경<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#권장-환경" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>Ubuntu 22.04 서버 2대 (또는 1대에서 2인스턴스)</li>
+<li>IP 예시
+<ul>
+<li>Master: <code>192.168.80.110</code></li>
+<li>Replica: <code>192.168.80.120</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="포트">포트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#포트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>기본: <code>6379</code></li>
+</ul>
+<hr/>
+<h2 id="1-redis-설치-두-서버-모두">1) Redis 설치 (두 서버 모두)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-redis-설치-두-서버-모두" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> apt</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> update</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> apt</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> install</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -y</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-server</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --version</span></span></code></pre></figure>
+<p>서비스 상태 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> status</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --no-pager</span></span></code></pre></figure>
+<hr/>
+<h2 id="2-방화벽네트워크-확인-두-서버-모두">2) 방화벽/네트워크 확인 (두 서버 모두)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-방화벽네트워크-확인-두-서버-모두" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>UFW를 쓰는 경우(예시):</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> allow</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> 6379/tcp</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ufw</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> status</span></span></code></pre></figure>
+<p>서로 통신 확인(Replica → Master):</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">nc</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -zv</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 192.168.80.110</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 6379</span></span></code></pre></figure>
+<hr/>
+<h2 id="3-master-설정-19216880110">3) Master 설정 (192.168.80.110)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-master-설정-19216880110" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>설정 파일:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> vi</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span></code></pre></figure>
+<p>아래 항목을 찾아 수정/확인:</p>
+<pre><code>bind 0.0.0.0
+port 6379
+
+protected-mode yes
+
+requirepass StrongPassw0rd!
+
+# (선택) 실습 중 위험 명령 막기 - 운영용 권장
+# rename-command FLUSHALL &quot;&quot;
+# rename-command FLUSHDB  &quot;&quot;
+</code></pre>
+<p>재시작:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> restart</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span></code></pre></figure>
+<p>외부 접속 확인(로컬에서):</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> PING</span></span>
+<span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># PONG</span></span>
+<span data-line> </span></code></pre></figure>
+<p>Master 역할 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;role|connected_slaves&quot;</span></span>
+<span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># role:master</span></span>
+<span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># connected_slaves:0</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h2 id="4-replica-설정-19216880120">4) Replica 설정 (192.168.80.120)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-replica-설정-19216880120" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>설정 파일:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> vi</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /etc/redis/redis.conf</span></span>
+<span data-line> </span></code></pre></figure>
+<p>아래 항목을 찾아 수정/확인:</p>
+<pre><code>bind 0.0.0.0
+port 6379
+
+protected-mode yes
+
+requirepass StrongPassw0rd!
+
+# Master 인증 (Master에 requirepass가 있을 때 필수)
+masterauth StrongPassw0rd!
+
+# 복제 대상 지정 (중요)
+replicaof 192.168.80.110 6379
+
+</code></pre>
+<p>재시작:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> restart</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span></span>
+<span data-line> </span></code></pre></figure>
+<p>Replica 역할 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;role|master_host|master_link_status&quot;</span></span>
+<span data-line> </span></code></pre></figure>
+<p>정상 출력 예:</p>
+<pre><code>role:slave
+master_host:192.168.80.110
+master_link_status:up
+
+</code></pre>
+<p>Master에서 Replica 연결 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;connected_slaves|slave0&quot;</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h2 id="5-복제-동작-확인">5) 복제 동작 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-복제-동작-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h2 id="5-1-master에-데이터-쓰기">5-1) Master에 데이터 쓰기<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-1-master에-데이터-쓰기" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Master에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:key</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;hello&quot;</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INCR</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:counter</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INCR</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:counter</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:key</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:counter</span></span></code></pre></figure>
+<h2 id="5-2-replica에서-동일-데이터-읽기">5-2) Replica에서 동일 데이터 읽기<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-2-replica에서-동일-데이터-읽기" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Replica에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:key</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> GET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> demo:counter</span></span></code></pre></figure>
+<p>기대 결과:</p>
+<ul>
+<li><code>demo:key</code> → <code>&quot;hello&quot;</code></li>
+<li><code>demo:counter</code> → <code>&quot;2&quot;</code></li>
+</ul>
+<hr/>
+<h2 id="6-replica-쓰기-금지-확인">6) Replica 쓰기 금지 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-replica-쓰기-금지-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Replica에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replica:write</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;no&quot;</span></span></code></pre></figure>
+<p>기대 결과:</p>
+<pre><code>(error) READONLY You can't write against a read only replica.
+</code></pre>
+<hr/>
+<h2 id="7-복제-해제--전환-실습">7) 복제 해제 / 전환 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-복제-해제--전환-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h2 id="7-1-replica-복제-해제standalone로-전환">7-1) Replica 복제 해제(Standalone로 전환)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-1-replica-복제-해제standalone로-전환" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Replica에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> REPLICAOF</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> NO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> ONE</span></span></code></pre></figure>
+<p>확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;role|master_host&quot;</span></span>
+<span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># role:master</span></span></code></pre></figure>
+<p>이제 Replica였던 서버에서 쓰기 가능:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> SET</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> now:master</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;ok&quot;</span></span></code></pre></figure>
+<hr/>
+<h2 id="7-2-다시-master19216880110-따라가도록-재설정">7-2) 다시 Master(192.168.80.110) 따라가도록 재설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-2-다시-master19216880110-따라가도록-재설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Replica(전환된 서버)에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> REPLICAOF</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 192.168.80.110</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 6379</span></span>
+<span data-line> </span></code></pre></figure>
+<hr/>
+<h2 id="8-장애운영-관점-포인트">8) 장애/운영 관점 포인트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-장애운영-관점-포인트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h2 id="8-1-복제는-자동-승격이-아님">8-1) 복제는 자동 승격이 아님<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-1-복제는-자동-승격이-아님" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>Master가 죽어도 Replica가 자동으로 Master가 되지 않음</li>
+<li>자동 장애조치가 필요하면:
+<ul>
+<li><strong>Redis Sentinel</strong> 또는</li>
+<li>클러스터/관리형(예: ElastiCache Multi-AZ) 고려</li>
+</ul>
+</li>
+</ul>
+<h2 id="8-2-보안-필수-요소">8-2) 보안 필수 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-2-보안-필수-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li><code>bind</code>를 내부망 IP로 제한하거나 보안그룹/방화벽으로 제한</li>
+<li><code>requirepass</code> 설정</li>
+<li>복제에는 <code>masterauth</code> 설정</li>
+</ul>
+<hr/>
+<h3 id="연결이-안-될-때replica에서">연결이 안 될 때(Replica에서)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#연결이-안-될-때replica에서" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Replica에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;master_link_status|master_last_io_seconds_ago|master_host&quot;</span></span>
+<span data-line> </span></code></pre></figure>
+<p>Master에서:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">redis-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -a</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> StrongPassw0rd!</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> INFO</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> replication</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> |</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> egrep</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> &quot;connected_slaves|slave0&quot;</span></span>
+<span data-line> </span></code></pre></figure>
+<p>로그 확인:</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">sudo</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> journalctl</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -u</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> redis-server</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> -n</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 200</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> --no-pager</span></span>
+<span data-line> </span></code></pre></figure>
+<p>자주 원인:</p>
+<ul>
+<li>Master 포트(6379) 방화벽 차단</li>
+<li>Master <code>bind 127.0.0.1</code>로 외부 접속 불가</li>
+<li><code>requirepass</code>는 있는데 Replica에 <code>masterauth</code> 누락</li>
+<li>서로 다른 Redis 인스턴스/포트에 붙음</li>
+</ul>
+<hr/></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-108" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#redis-실습" data-for="redis-실습">Redis 실습</a></li><li class="depth-1"><a href="#0-실습-목표-및-환경" data-for="0-실습-목표-및-환경">0. 실습 목표 및 환경</a></li><li class="depth-2"><a href="#목표" data-for="목표">목표</a></li><li class="depth-2"><a href="#준비물" data-for="준비물">준비물</a></li><li class="depth-1"><a href="#1-redis-설치-및-서비스-확인" data-for="1-redis-설치-및-서비스-확인">1. Redis 설치 및 서비스 확인</a></li><li class="depth-2"><a href="#1-1-패키지-설치" data-for="1-1-패키지-설치">1-1) 패키지 설치</a></li><li class="depth-2"><a href="#1-2-서비스-상태-확인" data-for="1-2-서비스-상태-확인">1-2) 서비스 상태 확인</a></li><li class="depth-2"><a href="#1-3-redis-버전접속-테스트" data-for="1-3-redis-버전접속-테스트">1-3) Redis 버전/접속 테스트</a></li><li class="depth-2"><a href="#1-4-포트-리스닝-확인기본-6379" data-for="1-4-포트-리스닝-확인기본-6379">1-4) 포트 리스닝 확인(기본 6379)</a></li><li class="depth-1"><a href="#2-redis-cli-기본-사용법" data-for="2-redis-cli-기본-사용법">2. redis-cli 기본 사용법</a></li><li class="depth-2"><a href="#2-1-접속" data-for="2-1-접속">2-1) 접속</a></li><li class="depth-2"><a href="#2-2-도움말명령-탐색" data-for="2-2-도움말명령-탐색">2-2) 도움말/명령 탐색</a></li><li class="depth-2"><a href="#2-3-서버-정보설정-확인" data-for="2-3-서버-정보설정-확인">2-3) 서버 정보/설정 확인</a></li><li class="depth-2"><a href="#2-4-키-탐색-주의" data-for="2-4-키-탐색-주의">2-4) 키 탐색 주의</a></li><li class="depth-1"><a href="#3-redis-데이터-모델자료구조-실습" data-for="3-redis-데이터-모델자료구조-실습">3. Redis 데이터 모델(자료구조) 실습</a></li><li class="depth-2"><a href="#실습-전-데이터-초기화" data-for="실습-전-데이터-초기화">실습 전, 데이터 초기화</a></li><li class="depth-1"><a href="#3-1-string" data-for="3-1-string">3-1) STRING</a></li><li class="depth-2"><a href="#실습" data-for="실습">실습</a></li><li class="depth-1"><a href="#3-2-list-큐--스택" data-for="3-2-list-큐--스택">3-2) LIST (큐 / 스택)</a></li><li class="depth-2"><a href="#블로킹-pop-워크-큐-스타일" data-for="블로킹-pop-워크-큐-스타일">블로킹 POP (워크 큐 스타일)</a></li><li class="depth-2"><a href="#터미널-a" data-for="터미널-a">터미널 A</a></li><li class="depth-2"><a href="#터미널-b" data-for="터미널-b">터미널 B</a></li><li class="depth-2"><a href="#과제" data-for="과제">과제</a></li><li class="depth-1"><a href="#3-3-set-중복-없는-집합" data-for="3-3-set-중복-없는-집합">3-3) SET (중복 없는 집합)</a></li><li class="depth-2"><a href="#집합-연산" data-for="집합-연산">집합 연산</a></li><li class="depth-1"><a href="#3-4-hash-객체--레코드" data-for="3-4-hash-객체--레코드">3-4) HASH (객체 / 레코드)</a></li><li class="depth-2"><a href="#과제-1" data-for="과제-1">과제</a></li><li class="depth-1"><a href="#3-5-zset-정렬된-집합-랭킹--점수" data-for="3-5-zset-정렬된-집합-랭킹--점수">3-5) ZSET (정렬된 집합: 랭킹 / 점수)</a></li><li class="depth-2"><a href="#top-n-조회" data-for="top-n-조회">Top-N 조회</a></li><li class="depth-1"><a href="#4-ttl과-캐시-동작-이해" data-for="4-ttl과-캐시-동작-이해">4. TTL과 캐시 동작 이해</a></li><li class="depth-2"><a href="#4-1-ttl-기본" data-for="4-1-ttl-기본">4-1) TTL 기본</a></li><li class="depth-2"><a href="#4-2-setex--psetex" data-for="4-2-setex--psetex">4-2) SETEX / PSETEX</a></li><li class="depth-2"><a href="#4-3-캐시-패턴-실습-수동-시뮬레이션" data-for="4-3-캐시-패턴-실습-수동-시뮬레이션">4-3) 캐시 패턴 실습 (수동 시뮬레이션)</a></li><li class="depth-1"><a href="#5-영속화persistence-rdb--aof" data-for="5-영속화persistence-rdb--aof">5. 영속화(Persistence): RDB / AOF</a></li><li class="depth-2"><a href="#5-1-현재-설정-확인" data-for="5-1-현재-설정-확인">5-1) 현재 설정 확인</a></li><li class="depth-2"><a href="#5-2-rdb-스냅샷기본" data-for="5-2-rdb-스냅샷기본">5-2) RDB 스냅샷(기본)</a></li><li class="depth-2"><a href="#5-3-aof-활성화권장-데이터-중요-시" data-for="5-3-aof-활성화권장-데이터-중요-시">5-3) AOF 활성화(권장: 데이터 중요 시)</a></li><li class="depth-1"><a href="#6-운영-관점-필수-점검메모리모니터링슬로우로그" data-for="6-운영-관점-필수-점검메모리모니터링슬로우로그">6. 운영 관점 필수 점검(메모리/모니터링/슬로우로그)</a></li><li class="depth-2"><a href="#6-1-메모리-확인" data-for="6-1-메모리-확인">6-1) 메모리 확인</a></li><li class="depth-2"><a href="#6-2-실시간-모니터링주의-운영에서-과다-사용-금지" data-for="6-2-실시간-모니터링주의-운영에서-과다-사용-금지">6-2) 실시간 모니터링(주의: 운영에서 과다 사용 금지)</a></li><li class="depth-2"><a href="#6-3-slowlog" data-for="6-3-slowlog">6-3) Slowlog</a></li><li class="depth-2"><a href="#6-4-클라이언트연결-확인" data-for="6-4-클라이언트연결-확인">6-4) 클라이언트/연결 확인</a></li><li class="depth-1"><a href="#7-보안-기본실습-환경-기준" data-for="7-보안-기본실습-환경-기준">7. 보안 기본(실습 환경 기준)</a></li><li class="depth-2"><a href="#7-1-기본-바인딩접근-제한-확인" data-for="7-1-기본-바인딩접근-제한-확인">7-1) 기본 바인딩/접근 제한 확인</a></li><li class="depth-2"><a href="#7-2-비밀번호-설정requirepass" data-for="7-2-비밀번호-설정requirepass">7-2) 비밀번호 설정(requirepass)</a></li><li class="depth-2"><a href="#7-3-ufw-방화벽외부-차단" data-for="7-3-ufw-방화벽외부-차단">7-3) UFW 방화벽(외부 차단)</a></li><li class="depth-1"><a href="#8-복제replication-실습-2대-vm-또는-2개-인스턴스" data-for="8-복제replication-실습-2대-vm-또는-2개-인스턴스">8. 복제(Replication) 실습: 2대 VM 또는 2개 인스턴스</a></li><li class="depth-1"><a href="#0-실습-준비" data-for="0-실습-준비">0. 실습 준비</a></li><li class="depth-1"><a href="#권장-환경" data-for="권장-환경">권장 환경</a></li><li class="depth-1"><a href="#포트" data-for="포트">포트</a></li><li class="depth-1"><a href="#1-redis-설치-두-서버-모두" data-for="1-redis-설치-두-서버-모두">1) Redis 설치 (두 서버 모두)</a></li><li class="depth-1"><a href="#2-방화벽네트워크-확인-두-서버-모두" data-for="2-방화벽네트워크-확인-두-서버-모두">2) 방화벽/네트워크 확인 (두 서버 모두)</a></li><li class="depth-1"><a href="#3-master-설정-19216880110" data-for="3-master-설정-19216880110">3) Master 설정 (192.168.80.110)</a></li><li class="depth-1"><a href="#4-replica-설정-19216880120" data-for="4-replica-설정-19216880120">4) Replica 설정 (192.168.80.120)</a></li><li class="depth-1"><a href="#5-복제-동작-확인" data-for="5-복제-동작-확인">5) 복제 동작 확인</a></li><li class="depth-1"><a href="#5-1-master에-데이터-쓰기" data-for="5-1-master에-데이터-쓰기">5-1) Master에 데이터 쓰기</a></li><li class="depth-1"><a href="#5-2-replica에서-동일-데이터-읽기" data-for="5-2-replica에서-동일-데이터-읽기">5-2) Replica에서 동일 데이터 읽기</a></li><li class="depth-1"><a href="#6-replica-쓰기-금지-확인" data-for="6-replica-쓰기-금지-확인">6) Replica 쓰기 금지 확인</a></li><li class="depth-1"><a href="#7-복제-해제--전환-실습" data-for="7-복제-해제--전환-실습">7) 복제 해제 / 전환 실습</a></li><li class="depth-1"><a href="#7-1-replica-복제-해제standalone로-전환" data-for="7-1-replica-복제-해제standalone로-전환">7-1) Replica 복제 해제(Standalone로 전환)</a></li><li class="depth-1"><a href="#7-2-다시-master19216880110-따라가도록-재설정" data-for="7-2-다시-master19216880110-따라가도록-재설정">7-2) 다시 Master(192.168.80.110) 따라가도록 재설정</a></li><li class="depth-1"><a href="#8-장애운영-관점-포인트" data-for="8-장애운영-관점-포인트">8) 장애/운영 관점 포인트</a></li><li class="depth-1"><a href="#8-1-복제는-자동-승격이-아님" data-for="8-1-복제는-자동-승격이-아님">8-1) 복제는 자동 승격이 아님</a></li><li class="depth-1"><a href="#8-2-보안-필수-요소" data-for="8-2-보안-필수-요소">8-2) 보안 필수 요소</a></li><li class="depth-2"><a href="#연결이-안-될-때replica에서" data-for="연결이-안-될-때replica에서">연결이 안 될 때(Replica에서)</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/데이터베이스" class="internal">데이터베이스</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

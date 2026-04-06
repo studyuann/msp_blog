@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)"/><meta name="twitter:description" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템) 5.1 스토리지 서비스 개요 AWS에서 스토리지는 단순히 데이터를 저장하는 공간이 아니라, 아키텍처 전체의 성능, 확장성, 비용, 내구성에 직접 영향을 주는 핵심 구성요소임."/><meta property="og:description" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템) 5.1 스토리지 서비스 개요 AWS에서 스토리지는 단순히 데이터를 저장하는 공간이 아니라, 아키텍처 전체의 성능, 확장성, 비용, 내구성에 직접 영향을 주는 핵심 구성요소임."/><meta property="og:image:alt" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템) 5.1 스토리지 서비스 개요 AWS에서 스토리지는 단순히 데이터를 저장하는 공간이 아니라, 아키텍처 전체의 성능, 확장성, 비용, 내구성에 직접 영향을 주는 핵심 구성요소임."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/5장-AWS-스토리지-아키텍처-(Amazon-S3,-공유-파일-시스템)"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/5장-AWS-스토리지-아키텍처-(Amazon-S3,-공유-파일-시스템)"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템) 5.1 스토리지 서비스 개요 AWS에서 스토리지는 단순히 데이터를 저장하는 공간이 아니라, 아키텍처 전체의 성능, 확장성, 비용, 내구성에 직접 영향을 주는 핵심 구성요소임."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/5장-AWS-스토리지-아키텍처-(Amazon-S3,-공유-파일-시스템)"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-32"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-32" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)</a></div></nav><h1 class="article-title">5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>25 min read</span></p></div></div><article class="popover-hint"><h1 id="5장-aws-스토리지-아키텍처-amazon-s3-공유-파일-시스템">5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5장-aws-스토리지-아키텍처-amazon-s3-공유-파일-시스템" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h1 id="51-스토리지-서비스-개요">5.1 스토리지 서비스 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#51-스토리지-서비스-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS에서 스토리지는 단순히 데이터를 저장하는 공간이 아니라, 아키텍처 전체의 성능, 확장성, 비용, 내구성에 직접 영향을 주는 핵심 구성요소임.</p>
+<p>어떤 스토리지를 선택하느냐에 따라 애플리케이션 구조 자체가 달라질 수 있음.</p>
+<p>예를 들어</p>
+<ul>
+<li>운영체제 디스크 저장 → EBS</li>
+<li>정적 파일 저장 → S3</li>
+<li>여러 서버가 동시에 같은 파일 공유 → EFS</li>
+<li>Windows 파일 서버 → FSx for Windows File Server</li>
+<li>고성능 Lustre 기반 분석 → FSx for Lustre</li>
+</ul>
+<p>즉, 스토리지는 “파일을 어디에 둘까?” 수준의 문제가 아니라</p>
+<p><strong>애플리케이션 요구사항에 맞는 저장 방식 선택 문제</strong>라고 봐야 함.</p>
+<hr/>
+<h1 id="52-aws-스토리지-분류">5.2 AWS 스토리지 분류<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#52-aws-스토리지-분류" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS 스토리지는 크게 다음과 같이 나눌 수 있음.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>분류</th><th>대표 서비스</th><th>설명</th></tr></thead><tbody><tr><td>객체 스토리지</td><td>S3</td><td>파일을 객체 단위로 저장</td></tr><tr><td>블록 스토리지</td><td>EBS</td><td>EC2에 연결하는 디스크</td></tr><tr><td>파일 스토리지</td><td>EFS, FSx</td><td>여러 서버가 공유하는 파일 시스템</td></tr><tr><td>아카이브 스토리지</td><td>S3 Glacier</td><td>장기 보관용 저비용 저장소</td></tr></tbody></table></div>
+<p>이 장에서는 커리큘럼에 맞게 **S3와 공유 파일 시스템(EFS 중심)**을 중점적으로 다룸.</p>
+<hr/>
+<h1 id="53-amazon-s3-개요">5.3 Amazon S3 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#53-amazon-s3-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Amazon S3는 <strong>Simple Storage Service</strong>의 약자이며, AWS의 대표적인 객체 스토리지 서비스임.</p>
+<p>객체 스토리지라는 말은 데이터를 “디스크 블록”이나 “파일 시스템 트리”가 아니라</p>
+<p><strong>객체(Object)</strong> 단위로 저장한다는 뜻임.</p>
+<p>S3의 구조</p>
+<pre><code>Bucket
+ ├ Object 1
+ ├ Object 2
+ └ Object 3
+</code></pre>
+<p>여기서</p>
+<ul>
+<li><strong>Bucket</strong> : 객체를 저장하는 논리적 컨테이너</li>
+<li><strong>Object</strong> : 실제 저장되는 파일</li>
+<li><strong>Key</strong> : 객체의 경로/이름 역할</li>
+<li><strong>Metadata</strong> : 객체에 대한 부가 정보</li>
+</ul>
+<p>예</p>
+<pre><code>s3://my-bucket/images/logo.png
+</code></pre>
+<p>의미</p>
+<ul>
+<li><code>my-bucket</code> : 버킷 이름</li>
+<li><code>images/logo.png</code> : 객체 키</li>
+</ul>
+<hr/>
+<h1 id="54-s3의-특징">5.4 S3의 특징<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#54-s3의-특징" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3는 AWS에서 매우 자주 사용되는 서비스이며 다음과 같은 특징이 있음.</p>
+<h3 id="1-매우-높은-내구성">1. 매우 높은 내구성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-매우-높은-내구성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>S3는 객체를 여러 장비와 여러 시설에 분산 저장하여 매우 높은 내구성을 제공함.</p>
+<h3 id="2-사실상-무제한-확장">2. 사실상 무제한 확장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-사실상-무제한-확장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>데이터 양이 많아져도 별도 디스크 증설 작업 없이 저장 가능함.</p>
+<h3 id="3-http-기반-접근">3. HTTP 기반 접근<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-http-기반-접근" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>브라우저, SDK, CLI, 애플리케이션 등 다양한 방식으로 접근 가능함.</p>
+<h3 id="4-정적-콘텐츠-저장에-적합">4. 정적 콘텐츠 저장에 적합<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-정적-콘텐츠-저장에-적합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이미지, 동영상, HTML, CSS, JS 같은 정적 파일 저장에 매우 적합함.</p>
+<h3 id="5-백업-및-로그-저장에-적합">5. 백업 및 로그 저장에 적합<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-백업-및-로그-저장에-적합" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>애플리케이션 백업, 로그 보관, 아카이빙, 데이터 레이크 저장소로 자주 사용됨.</p>
+<hr/>
+<h1 id="55-s3-기본-개념">5.5 S3 기본 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#55-s3-기본-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3를 이해할 때 반드시 알아야 할 개념이 있음.</p>
+<hr/>
+<h2 id="551-bucket">5.5.1 Bucket<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#551-bucket" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Bucket은 S3 객체를 저장하는 최상위 컨테이너임.</p>
+<p>버킷 이름은 전 세계적으로 유일해야 함.</p>
+<p>예</p>
+<pre><code>kyt-arc-bucket-2026
+</code></pre>
+<p>버킷 이름 규칙</p>
+<ul>
+<li>중복 불가</li>
+<li>소문자 사용 권장</li>
+<li>공백 불가</li>
+<li>DNS 호환 형식 권장</li>
+</ul>
+<p>버킷은 Region 단위로 생성되며, 버킷을 어느 리전에 만들지에 따라 데이터 저장 위치가 결정됨.</p>
+<hr/>
+<h2 id="552-object">5.5.2 Object<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#552-object" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>S3에 저장되는 실제 데이터 단위임.</p>
+<p>예</p>
+<ul>
+<li>사진 파일</li>
+<li>로그 파일</li>
+<li>백업 파일</li>
+<li>HTML 파일</li>
+<li>영상 파일</li>
+</ul>
+<p>객체는 다음으로 구성됨.</p>
+<ul>
+<li>데이터 본문</li>
+<li>Key</li>
+<li>Metadata</li>
+<li>Version ID (버저닝 사용 시)</li>
+</ul>
+<hr/>
+<h2 id="553-key">5.5.3 Key<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#553-key" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Key는 버킷 내부에서 객체를 식별하는 이름임.</p>
+<p>폴더처럼 보이는 구조가 있어도 실제로는 디렉터리 개념이 아니라 문자열 경로임.</p>
+<p>예</p>
+<pre><code>images/logo.png
+logs/2026/03/16/app.log
+backup/db/dump.sql
+</code></pre>
+<p>S3 콘솔에서는 이를 폴더처럼 보여주지만 실제로는 Key 값일 뿐임.</p>
+<hr/>
+<h1 id="56-객체-스토리지와-파일-스토리지-차이">5.6 객체 스토리지와 파일 스토리지 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#56-객체-스토리지와-파일-스토리지-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>학생들이 가장 많이 헷갈리는 부분 중 하나가</p>
+<p><strong>S3와 EFS를 둘 다 “파일 저장소”로 생각하는 것</strong>임.</p>
+<p>둘은 구조와 사용 방식이 다름.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>S3</th><th>EFS</th></tr></thead><tbody><tr><td>저장 방식</td><td>객체 스토리지</td><td>파일 스토리지</td></tr><tr><td>접근 방식</td><td>HTTP/HTTPS, API</td><td>NFS 마운트</td></tr><tr><td>여러 서버 공유</td><td>가능하나 파일 시스템처럼 쓰지 않음</td><td>가능</td></tr><tr><td>운영체제 마운트</td><td>일반 파일 시스템처럼 직접 사용 어려움</td><td>가능</td></tr><tr><td>대표 용도</td><td>정적 파일, 백업, 로그</td><td>공유 웹 콘텐츠, 공용 파일 저장</td></tr></tbody></table></div>
+<p>즉</p>
+<ul>
+<li><strong>S3는 API 기반 저장소</strong></li>
+<li><strong>EFS는 리눅스 공유 파일 시스템</strong></li>
+</ul>
+<p>이라고 이해하면 됨.</p>
+<hr/>
+<h1 id="57-s3-storage-class">5.7 S3 Storage Class<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#57-s3-storage-class" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3는 데이터 접근 빈도와 보관 목적에 따라 여러 저장 클래스를 제공함.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>Storage Class</th><th>설명</th></tr></thead><tbody><tr><td>Standard</td><td>자주 사용하는 데이터</td></tr><tr><td>Intelligent-Tiering</td><td>접근 패턴이 일정하지 않은 데이터</td></tr><tr><td>Standard-IA</td><td>드물게 접근하는 데이터</td></tr><tr><td>One Zone-IA</td><td>단일 AZ에 저장하는 저비용 클래스</td></tr><tr><td>Glacier Instant Retrieval</td><td>아카이브지만 즉시 조회 가능</td></tr><tr><td>Glacier Flexible Retrieval</td><td>장기 보관용</td></tr><tr><td>Glacier Deep Archive</td><td>가장 저렴한 장기 보관용</td></tr></tbody></table></div>
+<hr/>
+<h2 id="571-storage-class-선택-기준">5.7.1 Storage Class 선택 기준<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#571-storage-class-선택-기준" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="s3-standard">S3 Standard<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#s3-standard" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>자주 읽고 쓰는 데이터에 적합함.</p>
+<p>예</p>
+<ul>
+<li>웹사이트 정적 파일</li>
+<li>애플리케이션 업로드 파일</li>
+<li>운영 로그의 최근 데이터</li>
+</ul>
+<h3 id="s3-standard-ia">S3 Standard-IA<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#s3-standard-ia" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>평소 자주 접근하지 않지만 필요 시 즉시 꺼내야 하는 데이터에 적합함.</p>
+<p>예</p>
+<ul>
+<li>월별 백업 파일</li>
+<li>오래된 문서</li>
+</ul>
+<h3 id="glacier-계열">Glacier 계열<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#glacier-계열" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>장기 보관이 목적이고 조회가 드문 데이터에 적합함.</p>
+<p>예</p>
+<ul>
+<li>법적 보관 자료</li>
+<li>장기 백업</li>
+<li>오래된 감사 로그</li>
+</ul>
+<hr/>
+<h1 id="58-s3-보안">5.8 S3 보안<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#58-s3-보안" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3는 저장소 자체가 매우 단순해 보이지만 실제 운영에서는 보안 설정이 매우 중요함.</p>
+<p>특히 잘못 설정하면 민감한 파일이 인터넷에 공개될 수 있음.</p>
+<p>S3 보안 구성 요소</p>
+<ul>
+<li>Bucket Policy</li>
+<li>IAM Policy</li>
+<li>ACL</li>
+<li>Block Public Access</li>
+<li>Encryption</li>
+<li>Versioning</li>
+<li>Access Logging</li>
+</ul>
+<hr/>
+<h2 id="581-block-public-access">5.8.1 Block Public Access<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#581-block-public-access" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>S3 보안에서 가장 먼저 봐야 하는 기능임.</p>
+<p>버킷이나 객체가 실수로 공개되지 않도록 차단하는 기능임.</p>
+<p>일반적으로는 <strong>기본적으로 모두 활성화</strong>해 두는 것이 좋음.</p>
+<p>예외</p>
+<ul>
+<li>정적 웹사이트 호스팅</li>
+<li>CloudFront OAC/OAI 연동 시 일부 정책 설정 필요</li>
+</ul>
+<hr/>
+<h2 id="582-bucket-policy">5.8.2 Bucket Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#582-bucket-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>버킷 수준에서 접근 권한을 정의하는 정책임.</p>
+<p>JSON 형식으로 작성함.</p>
+<p>예시 구조</p>
+<pre><code>{
+  &quot;Version&quot;:&quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;:&quot;Allow&quot;,
+      &quot;Principal&quot;:&quot;*&quot;,
+      &quot;Action&quot;:&quot;s3:GetObject&quot;,
+      &quot;Resource&quot;:&quot;arn:aws:s3:::example-bucket/*&quot;
+    }
+  ]
+}
+</code></pre>
+<p>이 예시는 모든 사용자가 버킷 내 객체를 읽을 수 있도록 허용하는 정책임.</p>
+<p>운영 환경에서는 이렇게 전면 공개하는 방식은 매우 신중하게 사용해야 함.</p>
+<hr/>
+<h2 id="583-iam-policy와-s3">5.8.3 IAM Policy와 S3<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#583-iam-policy와-s3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>IAM Policy는 “누가 무엇을 할 수 있는가”를 정의함.</p>
+<p>Bucket Policy는 “이 버킷이 누구를 허용할 것인가”를 정의함.</p>
+<p>둘의 차이</p>
+<ul>
+<li>IAM Policy : 사용자/역할 중심</li>
+<li>Bucket Policy : 버킷 중심</li>
+</ul>
+<p>실무에서는 두 정책이 함께 작동함.</p>
+<hr/>
+<h2 id="584-s3-암호화">5.8.4 S3 암호화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#584-s3-암호화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>S3는 저장 데이터 암호화를 지원함.</p>
+<p>대표 방식</p>
+<ul>
+<li>SSE-S3</li>
+<li>SSE-KMS</li>
+<li>SSE-C</li>
+</ul>
+<p>교육 환경에서는 보통 <strong>SSE-S3 또는 SSE-KMS</strong> 정도를 설명하면 충분함.</p>
+<h3 id="sse-s3">SSE-S3<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sse-s3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS가 관리하는 키로 암호화함.</p>
+<h3 id="sse-kms">SSE-KMS<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sse-kms" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS KMS 키를 사용해 더 정교하게 제어함.</p>
+<hr/>
+<h1 id="59-s3-versioning">5.9 S3 Versioning<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#59-s3-versioning" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Versioning은 객체의 이전 버전을 보관하는 기능임.</p>
+<p>예를 들어 같은 이름의 파일을 다시 업로드해도 이전 버전이 보존됨.</p>
+<p>장점</p>
+<ul>
+<li>실수로 덮어쓴 파일 복구 가능</li>
+<li>삭제된 객체 복구 가능</li>
+<li>운영 안정성 향상</li>
+</ul>
+<p>주의</p>
+<ul>
+<li>버전 수가 많아지면 비용이 증가할 수 있음</li>
+</ul>
+<hr/>
+<h1 id="510-s3-lifecycle">5.10 S3 Lifecycle<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#510-s3-lifecycle" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Lifecycle은 객체를 시간 경과에 따라 자동으로 다른 Storage Class로 이동하거나 삭제하는 정책임.</p>
+<p>예</p>
+<ul>
+<li>30일 후 Standard-IA로 전환</li>
+<li>90일 후 Glacier로 전환</li>
+<li>365일 후 삭제</li>
+</ul>
+<p>Lifecycle을 사용하는 이유</p>
+<ul>
+<li>장기 보관 비용 절감</li>
+<li>로그/백업 자동 정리</li>
+<li>운영 자동화</li>
+</ul>
+<hr/>
+<h1 id="511-s3-주요-사용-사례">5.11 S3 주요 사용 사례<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#511-s3-주요-사용-사례" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-정적-웹사이트-저장소">1. 정적 웹사이트 저장소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-정적-웹사이트-저장소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>HTML, CSS, JS, 이미지 파일 등을 저장함.</p>
+<h3 id="2-애플리케이션-업로드-파일-저장">2. 애플리케이션 업로드 파일 저장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-애플리케이션-업로드-파일-저장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자가 업로드한 이미지, 문서, 첨부파일 저장.</p>
+<h3 id="3-로그-저장소">3. 로그 저장소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-로그-저장소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>ALB 로그, CloudTrail 로그, 애플리케이션 로그 저장.</p>
+<h3 id="4-백업-저장소">4. 백업 저장소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-백업-저장소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>DB 덤프, 스냅샷 export 파일, 설정 백업 등 저장.</p>
+<h3 id="5-데이터-레이크-저장소">5. 데이터 레이크 저장소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-데이터-레이크-저장소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>분석용 원본 데이터를 저장.</p>
+<hr/>
+<h1 id="512-s3-정적-웹사이트-호스팅">5.12 S3 정적 웹사이트 호스팅<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#512-s3-정적-웹사이트-호스팅" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3는 정적 파일을 웹사이트처럼 제공할 수 있음.</p>
+<p>즉, 서버 없이 HTML/CSS/JS 파일만으로 구성된 웹사이트를 만들 수 있음.</p>
+<p>적합한 경우</p>
+<ul>
+<li>회사 소개 페이지</li>
+<li>실습용 정적 페이지</li>
+<li>프론트엔드 정적 배포</li>
+<li>CloudFront 원본 저장소</li>
+</ul>
+<p>제한사항</p>
+<ul>
+<li>서버 사이드 코드 실행 불가</li>
+<li>PHP, Java, Node.js 백엔드는 직접 실행 못함</li>
+</ul>
+<p>즉, S3 웹사이트 호스팅은 “파일 배포”이지 “애플리케이션 서버 운영”은 아님.</p>
+<hr/>
+<h1 id="513-공유-파일-시스템-개요">5.13 공유 파일 시스템 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#513-공유-파일-시스템-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>S3가 객체 스토리지라면, EFS와 FSx는 <strong>공유 파일 시스템</strong>임.</p>
+<p>여러 서버가 같은 파일 시스템을 동시에 사용해야 할 때 필요함.</p>
+<p>예</p>
+<ul>
+<li>여러 웹 서버가 같은 업로드 디렉터리 사용</li>
+<li>여러 애플리케이션 서버가 공통 설정 파일 공유</li>
+<li>리눅스 서버 간 공용 파일 저장</li>
+<li>윈도우 SMB 공유 드라이브 운영</li>
+</ul>
+<hr/>
+<h1 id="514-amazon-efs-개요">5.14 Amazon EFS 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#514-amazon-efs-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Amazon EFS는 <strong>Elastic File System</strong>의 약자임.</p>
+<p>리눅스 인스턴스에서 NFS(Network File System) 방식으로 마운트해서 사용하는 관리형 파일 스토리지임.</p>
+<p>특징</p>
+<ul>
+<li>여러 EC2가 동시에 마운트 가능</li>
+<li>자동 확장</li>
+<li>관리형 서비스</li>
+<li>Multi-AZ 내구성</li>
+<li>리눅스 기반 워크로드에 적합</li>
+</ul>
+<p>EFS는 운영체제 입장에서 일반 디렉터리처럼 보임.</p>
+<p>즉, 애플리케이션이 로컬 파일 시스템을 쓰듯 접근할 수 있음.</p>
+<hr/>
+<h1 id="515-efs의-사용-사례">5.15 EFS의 사용 사례<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#515-efs의-사용-사례" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-웹-서버-공용-업로드-디렉터리">1. 웹 서버 공용 업로드 디렉터리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-웹-서버-공용-업로드-디렉터리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>ALB 뒤에 여러 대의 EC2가 있을 때, 사용자 업로드 파일을 공용 저장소에 저장해야 함.</p>
+<h3 id="2-콘텐츠-공유">2. 콘텐츠 공유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-콘텐츠-공유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>여러 서버가 같은 정적 콘텐츠를 공유해야 할 때 사용함.</p>
+<h3 id="3-애플리케이션-설정-공유">3. 애플리케이션 설정 공유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-애플리케이션-설정-공유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>공용 설정 파일, 공용 템플릿 파일 저장.</p>
+<h3 id="4-컨테이너-공유-스토리지">4. 컨테이너 공유 스토리지<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-컨테이너-공유-스토리지" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>ECS/EKS 환경에서 공유 파일 저장소로 활용 가능함.</p>
+<hr/>
+<h1 id="516-efs와-ebs-비교">5.16 EFS와 EBS 비교<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#516-efs와-ebs-비교" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>EBS</th><th>EFS</th></tr></thead><tbody><tr><td>연결 방식</td><td>보통 한 인스턴스에 연결</td><td>여러 인스턴스 동시 연결 가능</td></tr><tr><td>저장 방식</td><td>블록 스토리지</td><td>파일 스토리지</td></tr><tr><td>접근 방식</td><td>디스크</td><td>NFS 파일 시스템</td></tr><tr><td>대표 용도</td><td>OS 디스크, 단일 서버 데이터</td><td>공유 파일 저장</td></tr></tbody></table></div>
+<p>즉</p>
+<ul>
+<li><strong>EBS는 한 서버용 디스크</strong></li>
+<li><strong>EFS는 여러 서버가 공유하는 파일 시스템</strong></li>
+</ul>
+<p>으로 보면 됨.</p>
+<hr/>
+<h1 id="517-amazon-fsx-개요">5.17 Amazon FSx 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#517-amazon-fsx-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>FSx는 특정 파일 시스템을 AWS 관리형으로 제공하는 서비스군임.</p>
+<p>대표 서비스</p>
+<ul>
+<li>FSx for Windows File Server</li>
+<li>FSx for Lustre</li>
+<li>FSx for NetApp ONTAP</li>
+<li>FSx for OpenZFS</li>
+</ul>
+<p>교육 과정에서는 깊게 들어가기보다 다음 정도로 구분하면 충분함.</p>
+<h3 id="fsx-for-windows-file-server">FSx for Windows File Server<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#fsx-for-windows-file-server" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>SMB 기반 윈도우 파일 공유가 필요할 때 사용함.</p>
+<h3 id="fsx-for-lustre">FSx for Lustre<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#fsx-for-lustre" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>고성능 분석, HPC, 머신러닝 학습 데이터 처리에 적합함.</p>
+<hr/>
+<h1 id="518-스토리지-선택-기준-정리">5.18 스토리지 선택 기준 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#518-스토리지-선택-기준-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>요구사항</th><th>적합한 서비스</th></tr></thead><tbody><tr><td>정적 파일 저장</td><td>S3</td></tr><tr><td>백업 및 로그 저장</td><td>S3</td></tr><tr><td>EC2 루트 디스크</td><td>EBS</td></tr><tr><td>여러 EC2 간 공유 디렉터리</td><td>EFS</td></tr><tr><td>Windows 공유 폴더</td><td>FSx for Windows File Server</td></tr><tr><td>초고성능 분석 파일 시스템</td><td>FSx for Lustre</td></tr></tbody></table></div>
+<p>이 부분은 학생들이 반드시 정리해 두는 것이 좋음.</p>
+<p>실무에서 “어떤 저장소를 써야 하나”라는 질문이 매우 자주 나오기 때문임.</p>
+<hr/>
+<h1 id="519-실습-1--s3-버킷-생성-및-객체-업로드">5.19 실습 1 : S3 버킷 생성 및 객체 업로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#519-실습-1--s3-버킷-생성-및-객체-업로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>S3 버킷을 생성함</li>
+<li>파일을 업로드함</li>
+<li>객체 URL 구조를 이해함</li>
+<li>CLI로 객체를 조회함</li>
+</ul>
+<hr/>
+<h2 id="5191-버킷-생성">5.19.1 버킷 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5191-버킷-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>S3 콘솔 → Create bucket</p>
+<p>설정 예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Bucket name</td><td>이니셜-arc-s3-bucket-고유값</td></tr><tr><td>Region</td><td>ap-northeast-2</td></tr><tr><td>Block Public Access</td><td>기본값 유지</td></tr><tr><td>Versioning</td><td>비활성 또는 필요 시 활성</td></tr></tbody></table></div>
+<p>주의</p>
+<ul>
+<li>버킷 이름은 전 세계적으로 유일해야 함</li>
+<li>이미 누군가 사용 중인 이름이면 생성 불가</li>
+</ul>
+<p>예시 이름</p>
+<pre><code>kyt-arc-s3-bucket-20260316
+</code></pre>
+<hr/>
+<h2 id="5192-파일-업로드">5.19.2 파일 업로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5192-파일-업로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>버킷 생성 후 <code>Upload</code>를 눌러 임의의 파일 1~2개 업로드함.</p>
+<p>예</p>
+<ul>
+<li>sample.txt</li>
+<li>image.png</li>
+</ul>
+<p>업로드가 끝나면 객체 목록에서 파일 이름과 크기, 수정 시간을 확인할 수 있음.</p>
+<hr/>
+<h2 id="5193-cli로-버킷-목록-확인">5.19.3 CLI로 버킷 목록 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5193-cli로-버킷-목록-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws s3ls
+</code></pre>
+<h3 id="명령어-설명">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="aws-s3"><code>aws s3</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#aws-s3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>S3 고수준 명령 그룹임.</p>
+<p>버킷 목록 조회, 파일 업로드, 다운로드 등 자주 쓰는 기능을 간단하게 제공함.</p>
+<h3 id="ls"><code>ls</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ls" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>리스트를 조회하는 명령임.</p>
+<p>리눅스의 <code>ls</code>처럼 목록을 보여주는 역할을 함.</p>
+<p>이 명령을 실행하면 현재 계정에서 접근 가능한 버킷 목록이 출력됨.</p>
+<hr/>
+<h2 id="5194-특정-버킷의-객체-목록-확인">5.19.4 특정 버킷의 객체 목록 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5194-특정-버킷의-객체-목록-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws s3ls s3://이니셜-arc-s3-bucket-고유값
+</code></pre>
+<p>예</p>
+<pre><code>aws s3ls s3://kyt-arc-s3-bucket-20260316
+</code></pre>
+<p>이 명령은 해당 버킷 안에 저장된 객체 목록을 조회함.</p>
+<p>출력 예</p>
+<pre><code>2026-03-16 10:20:31       1240 sample.txt
+2026-03-16 10:21:02      50231 image.png
+</code></pre>
+<hr/>
+<h1 id="520-실습-2--cli로-파일-업로드-및-다운로드">5.20 실습 2 : CLI로 파일 업로드 및 다운로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#520-실습-2--cli로-파일-업로드-및-다운로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>AWS CLI를 사용해 객체를 업로드함</li>
+<li>객체를 다운로드함</li>
+<li><code>cp</code> 명령 구조를 익힘</li>
+</ul>
+<hr/>
+<h2 id="5201-파일-업로드">5.20.1 파일 업로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5201-파일-업로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>로컬 또는 CloudShell에 테스트 파일 생성</p>
+<pre><code>echo&quot;hello s3&quot; > sample.txt
+</code></pre>
+<p>이 명령은 현재 디렉터리에 <code>sample.txt</code> 파일을 만들고</p>
+<p>그 안에 <code>hello s3</code> 문자열을 저장함.</p>
+<p>업로드 명령</p>
+<pre><code>aws s3cp sample.txt s3://이니셜-arc-s3-bucket-고유값/
+</code></pre>
+<p>예</p>
+<pre><code>aws s3cp sample.txt s3://kyt-arc-s3-bucket-20260316/
+</code></pre>
+<h3 id="명령어-설명-1">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="cp"><code>cp</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cp" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>copy의 약자임.</p>
+<p>로컬 ↔ S3, S3 ↔ 로컬, S3 ↔ S3 간 파일 복사에 사용함.</p>
+<h3 id="sampletxt"><code>sample.txt</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#sampletxt" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>업로드할 원본 파일임.</p>
+<h3 id="s3"><code>s3://.../</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#s3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>대상 버킷 경로임.</p>
+<p>즉, 이 명령은 로컬의 <code>sample.txt</code>를 S3 버킷 루트 경로에 업로드함.</p>
+<hr/>
+<h2 id="5202-파일-다운로드">5.20.2 파일 다운로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5202-파일-다운로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws s3cp s3://이니셜-arc-s3-bucket-고유값/sample.txt ./downloaded.txt
+</code></pre>
+<p>예</p>
+<pre><code>aws s3cp s3://kyt-arc-s3-bucket-20260316/sample.txt ./downloaded.txt
+</code></pre>
+<p>이 명령은 S3 객체를 현재 디렉터리에 <code>downloaded.txt</code>라는 이름으로 저장함.</p>
+<p>확인</p>
+<pre><code>cat downloaded.txt
+</code></pre>
+<p>정상 동작 시</p>
+<pre><code>hello s3
+</code></pre>
+<p>가 출력됨.</p>
+<hr/>
+<h1 id="521-실습-3--s3-정적-웹사이트-호스팅">5.21 실습 3 : S3 정적 웹사이트 호스팅<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#521-실습-3--s3-정적-웹사이트-호스팅" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>HTML 파일을 업로드함</li>
+<li>S3 정적 웹사이트 기능을 활성화함</li>
+<li>브라우저에서 페이지를 확인함</li>
+</ul>
+<hr/>
+<h2 id="5211-indexhtml-파일-생성">5.21.1 index.html 파일 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5211-indexhtml-파일-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>cat > index.html&lt;&lt;'EOF'
+&lt;h1>Welcome to S3 Static Website&lt;/h1>
+EOF
+</code></pre>
+<p>이 명령은 <code>index.html</code> 파일을 생성하고 HTML 내용을 저장함.</p>
+<hr/>
+<h2 id="5212-파일-업로드">5.21.2 파일 업로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5212-파일-업로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws s3cp index.html s3://이니셜-arc-s3-bucket-고유값/
+</code></pre>
+<hr/>
+<h2 id="5213-정적-웹사이트-활성화">5.21.3 정적 웹사이트 활성화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5213-정적-웹사이트-활성화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>S3 콘솔 → 버킷 선택 → Properties → Static website hosting</p>
+<p>설정</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Static website hosting</td><td>Enable</td></tr><tr><td>Hosting type</td><td>Host a static website</td></tr><tr><td>Index document</td><td>index.html</td></tr></tbody></table></div>
+<hr/>
+<h2 id="5214-공개-접근-정책-설정">5.21.4 공개 접근 정책 설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5214-공개-접근-정책-설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>정적 웹사이트는 외부 사용자가 HTML 파일을 읽어야 하므로 공개 정책이 필요함.</p>
+<p>이때 Block Public Access 설정과 Bucket Policy가 함께 관련됨.</p>
+<p>실습용 예시 Bucket Policy</p>
+<pre><code>{
+  &quot;Version&quot;:&quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;:&quot;PublicReadGetObject&quot;,
+      &quot;Effect&quot;:&quot;Allow&quot;,
+      &quot;Principal&quot;:&quot;*&quot;,
+      &quot;Action&quot;:&quot;s3:GetObject&quot;,
+      &quot;Resource&quot;:&quot;arn:aws:s3:::이니셜-arc-s3-bucket-고유값/*&quot;
+    }
+  ]
+}
+</code></pre>
+<p>주의</p>
+<ul>
+<li>이 정책은 실습용 공개 읽기 예시임</li>
+<li>운영 환경에서는 CloudFront를 앞단에 두고 더 안전하게 구성하는 것이 일반적임</li>
+</ul>
+<hr/>
+<h2 id="5215-웹사이트-접속-확인">5.21.5 웹사이트 접속 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5215-웹사이트-접속-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Properties 탭의 Website endpoint 주소를 복사해 브라우저에서 접속함.</p>
+<p>예시 형태</p>
+<pre><code>http://bucket-name.s3-website.ap-northeast-2.amazonaws.com
+</code></pre>
+<p>정상 동작 시</p>
+<pre><code>Welcome to S3 Static Website
+</code></pre>
+<p>가 표시됨.</p>
+<hr/>
+<h1 id="522-실습-4--efs-생성-및-ec2-마운트">5.22 실습 4 : EFS 생성 및 EC2 마운트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#522-실습-4--efs-생성-및-ec2-마운트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>EFS 파일 시스템을 생성함</li>
+<li>EC2에 NFS 방식으로 마운트함</li>
+<li>공유 파일 시스템 개념을 확인함</li>
+</ul>
+<hr/>
+<h2 id="5221-사전-준비">5.22.1 사전 준비<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5221-사전-준비" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>필요 자원</p>
+<ul>
+<li>VPC</li>
+<li>Private 또는 Public Subnet의 EC2</li>
+<li>EC2가 EFS에 접근 가능한 보안 그룹</li>
+</ul>
+<hr/>
+<h2 id="5222-efs-생성">5.22.2 EFS 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5222-efs-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>EFS 콘솔 → Create file system</p>
+<p>설정 예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Name</td><td>이니셜-efs-share</td></tr><tr><td>VPC</td><td>이니셜-vpc-main</td></tr><tr><td>Availability and durability</td><td>Regional</td></tr><tr><td>Performance mode</td><td>General Purpose</td></tr></tbody></table></div>
+<p>생성 과정에서 각 AZ에 대한 Mount Target이 생성됨.</p>
+<hr/>
+<h2 id="5223-efs-보안-그룹">5.22.3 EFS 보안 그룹<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5223-efs-보안-그룹" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>EFS는 NFS 프로토콜을 사용하므로 <strong>2049/TCP</strong> 포트를 허용해야 함.</p>
+<p>예시 규칙</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>방향</th><th>프로토콜</th><th>포트</th><th>소스</th></tr></thead><tbody><tr><td>Inbound</td><td>TCP</td><td>2049</td><td>EC2 보안 그룹</td></tr></tbody></table></div>
+<p>중요</p>
+<ul>
+<li>보안상 <code>0.0.0.0/0</code>로 열지 않는 것이 좋음</li>
+<li>가능하면 EC2의 보안 그룹을 소스로 지정하는 방식이 바람직함</li>
+</ul>
+<hr/>
+<h2 id="5224-ec2에-패키지-설치">5.22.4 EC2에 패키지 설치<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5224-ec2에-패키지-설치" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Amazon Linux 계열에서 실행</p>
+<pre><code>sudo dnf install-y amazon-efs-utils
+</code></pre>
+<h3 id="명령어-설명-2">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-2" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="amazon-efs-utils"><code>amazon-efs-utils</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#amazon-efs-utils" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS EFS를 보다 쉽게 마운트할 수 있도록 도와주는 유틸리티 패키지임.</p>
+<p>이 패키지를 설치하면 단순 NFS 마운트보다 편리하게 EFS 전용 방식으로 연결할 수 있음.</p>
+<hr/>
+<h2 id="5225-마운트-디렉터리-생성">5.22.5 마운트 디렉터리 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5225-마운트-디렉터리-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>sudomkdir /efs
+</code></pre>
+<p>이 디렉터리는 EFS를 연결할 마운트 지점임.</p>
+<hr/>
+<h2 id="5226-efs-마운트">5.22.6 EFS 마운트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5226-efs-마운트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>sudo mount-t efs &lt;EFS-파일시스템ID>:/ /efs
+</code></pre>
+<p>예</p>
+<pre><code>sudo mount-t efs fs-0abc123def4567890:/ /efs
+</code></pre>
+<h3 id="명령어-설명-3">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="mount"><code>mount</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#mount" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>파일 시스템을 특정 디렉터리에 연결하는 명령임.</p>
+<h3 id="t-efs"><code>t efs</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#t-efs" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>파일 시스템 유형을 EFS로 지정함.</p>
+<h3 id="fs-"><code>fs-...:/</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#fs-" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>EFS 파일 시스템 ID와 루트 경로를 의미함.</p>
+<h3 id="efs"><code>/efs</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#efs" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>마운트 대상 디렉터리임.</p>
+<p>정상적으로 마운트되면 <code>/efs</code> 디렉터리가 EFS 저장소와 연결됨.</p>
+<hr/>
+<h2 id="5227-동작-확인">5.22.7 동작 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5227-동작-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>df-h
+</code></pre>
+<p>이 명령은 현재 마운트된 파일 시스템 목록을 보여줌.</p>
+<p>여기서 EFS가 <code>/efs</code>에 연결되어 있는지 확인함.</p>
+<p>테스트 파일 생성</p>
+<pre><code>echo&quot;hello efs&quot; |sudotee /efs/test.txt
+</code></pre>
+<p>확인</p>
+<pre><code>cat /efs/test.txt
+</code></pre>
+<p>정상 동작 시</p>
+<pre><code>hello efs
+</code></pre>
+<p>가 출력됨.</p>
+<hr/>
+<h1 id="523-efs-활용-시나리오-설명">5.23 EFS 활용 시나리오 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#523-efs-활용-시나리오-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>예를 들어 웹 서버가 2대 있다고 가정해보면</p>
+<pre><code>ALB
+ ├ EC2-Web-1
+ └ EC2-Web-2
+</code></pre>
+<p>이때 두 서버가 같은 업로드 디렉터리를 사용해야 하면 각 서버의 로컬 디스크를 쓰면 안 됨.</p>
+<p>한 서버에 올린 파일이 다른 서버에는 없기 때문임.</p>
+<p>이 문제를 해결하는 방식 중 하나가 EFS임.</p>
+<pre><code>ALB
+ ├ EC2-Web-1 ─┐
+ └ EC2-Web-2 ─┼─ EFS
+              ┘
+</code></pre>
+<p>즉, 두 서버가 같은 파일 시스템을 바라보게 만들어 업로드 파일을 공유할 수 있음.</p>
+<hr/>
+<h1 id="524-스토리지-아키텍처-설계-포인트">5.24 스토리지 아키텍처 설계 포인트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#524-스토리지-아키텍처-설계-포인트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h3 id="1-저장-방식부터-구분해야-함">1. 저장 방식부터 구분해야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-저장-방식부터-구분해야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>객체 저장인가</li>
+<li>블록 저장인가</li>
+<li>파일 공유인가</li>
+</ul>
+<h3 id="2-접근-패턴을-봐야-함">2. 접근 패턴을 봐야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-접근-패턴을-봐야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>자주 읽는가</li>
+<li>거의 안 읽는가</li>
+<li>여러 서버가 동시에 접근하는가</li>
+</ul>
+<h3 id="3-비용과-보관-기간을-고려해야-함">3. 비용과 보관 기간을 고려해야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-비용과-보관-기간을-고려해야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>최근 데이터는 Standard</li>
+<li>오래된 데이터는 IA/Glacier</li>
+<li>Lifecycle 자동화 고려</li>
+</ul>
+<h3 id="4-보안-설정이-매우-중요함">4. 보안 설정이 매우 중요함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-보안-설정이-매우-중요함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>S3 Public Access 차단</li>
+<li>IAM 최소 권한</li>
+<li>EFS 보안 그룹 제한</li>
+<li>암호화 활성화</li>
+</ul></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-30" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#5장-aws-스토리지-아키텍처-amazon-s3-공유-파일-시스템" data-for="5장-aws-스토리지-아키텍처-amazon-s3-공유-파일-시스템">5장 AWS 스토리지 아키텍처 (Amazon S3, 공유 파일 시스템)</a></li><li class="depth-0"><a href="#51-스토리지-서비스-개요" data-for="51-스토리지-서비스-개요">5.1 스토리지 서비스 개요</a></li><li class="depth-0"><a href="#52-aws-스토리지-분류" data-for="52-aws-스토리지-분류">5.2 AWS 스토리지 분류</a></li><li class="depth-0"><a href="#53-amazon-s3-개요" data-for="53-amazon-s3-개요">5.3 Amazon S3 개요</a></li><li class="depth-0"><a href="#54-s3의-특징" data-for="54-s3의-특징">5.4 S3의 특징</a></li><li class="depth-2"><a href="#1-매우-높은-내구성" data-for="1-매우-높은-내구성">1. 매우 높은 내구성</a></li><li class="depth-2"><a href="#2-사실상-무제한-확장" data-for="2-사실상-무제한-확장">2. 사실상 무제한 확장</a></li><li class="depth-2"><a href="#3-http-기반-접근" data-for="3-http-기반-접근">3. HTTP 기반 접근</a></li><li class="depth-2"><a href="#4-정적-콘텐츠-저장에-적합" data-for="4-정적-콘텐츠-저장에-적합">4. 정적 콘텐츠 저장에 적합</a></li><li class="depth-2"><a href="#5-백업-및-로그-저장에-적합" data-for="5-백업-및-로그-저장에-적합">5. 백업 및 로그 저장에 적합</a></li><li class="depth-0"><a href="#55-s3-기본-개념" data-for="55-s3-기본-개념">5.5 S3 기본 개념</a></li><li class="depth-1"><a href="#551-bucket" data-for="551-bucket">5.5.1 Bucket</a></li><li class="depth-1"><a href="#552-object" data-for="552-object">5.5.2 Object</a></li><li class="depth-1"><a href="#553-key" data-for="553-key">5.5.3 Key</a></li><li class="depth-0"><a href="#56-객체-스토리지와-파일-스토리지-차이" data-for="56-객체-스토리지와-파일-스토리지-차이">5.6 객체 스토리지와 파일 스토리지 차이</a></li><li class="depth-0"><a href="#57-s3-storage-class" data-for="57-s3-storage-class">5.7 S3 Storage Class</a></li><li class="depth-1"><a href="#571-storage-class-선택-기준" data-for="571-storage-class-선택-기준">5.7.1 Storage Class 선택 기준</a></li><li class="depth-2"><a href="#s3-standard" data-for="s3-standard">S3 Standard</a></li><li class="depth-2"><a href="#s3-standard-ia" data-for="s3-standard-ia">S3 Standard-IA</a></li><li class="depth-2"><a href="#glacier-계열" data-for="glacier-계열">Glacier 계열</a></li><li class="depth-0"><a href="#58-s3-보안" data-for="58-s3-보안">5.8 S3 보안</a></li><li class="depth-1"><a href="#581-block-public-access" data-for="581-block-public-access">5.8.1 Block Public Access</a></li><li class="depth-1"><a href="#582-bucket-policy" data-for="582-bucket-policy">5.8.2 Bucket Policy</a></li><li class="depth-1"><a href="#583-iam-policy와-s3" data-for="583-iam-policy와-s3">5.8.3 IAM Policy와 S3</a></li><li class="depth-1"><a href="#584-s3-암호화" data-for="584-s3-암호화">5.8.4 S3 암호화</a></li><li class="depth-2"><a href="#sse-s3" data-for="sse-s3">SSE-S3</a></li><li class="depth-2"><a href="#sse-kms" data-for="sse-kms">SSE-KMS</a></li><li class="depth-0"><a href="#59-s3-versioning" data-for="59-s3-versioning">5.9 S3 Versioning</a></li><li class="depth-0"><a href="#510-s3-lifecycle" data-for="510-s3-lifecycle">5.10 S3 Lifecycle</a></li><li class="depth-0"><a href="#511-s3-주요-사용-사례" data-for="511-s3-주요-사용-사례">5.11 S3 주요 사용 사례</a></li><li class="depth-2"><a href="#1-정적-웹사이트-저장소" data-for="1-정적-웹사이트-저장소">1. 정적 웹사이트 저장소</a></li><li class="depth-2"><a href="#2-애플리케이션-업로드-파일-저장" data-for="2-애플리케이션-업로드-파일-저장">2. 애플리케이션 업로드 파일 저장</a></li><li class="depth-2"><a href="#3-로그-저장소" data-for="3-로그-저장소">3. 로그 저장소</a></li><li class="depth-2"><a href="#4-백업-저장소" data-for="4-백업-저장소">4. 백업 저장소</a></li><li class="depth-2"><a href="#5-데이터-레이크-저장소" data-for="5-데이터-레이크-저장소">5. 데이터 레이크 저장소</a></li><li class="depth-0"><a href="#512-s3-정적-웹사이트-호스팅" data-for="512-s3-정적-웹사이트-호스팅">5.12 S3 정적 웹사이트 호스팅</a></li><li class="depth-0"><a href="#513-공유-파일-시스템-개요" data-for="513-공유-파일-시스템-개요">5.13 공유 파일 시스템 개요</a></li><li class="depth-0"><a href="#514-amazon-efs-개요" data-for="514-amazon-efs-개요">5.14 Amazon EFS 개요</a></li><li class="depth-0"><a href="#515-efs의-사용-사례" data-for="515-efs의-사용-사례">5.15 EFS의 사용 사례</a></li><li class="depth-2"><a href="#1-웹-서버-공용-업로드-디렉터리" data-for="1-웹-서버-공용-업로드-디렉터리">1. 웹 서버 공용 업로드 디렉터리</a></li><li class="depth-2"><a href="#2-콘텐츠-공유" data-for="2-콘텐츠-공유">2. 콘텐츠 공유</a></li><li class="depth-2"><a href="#3-애플리케이션-설정-공유" data-for="3-애플리케이션-설정-공유">3. 애플리케이션 설정 공유</a></li><li class="depth-2"><a href="#4-컨테이너-공유-스토리지" data-for="4-컨테이너-공유-스토리지">4. 컨테이너 공유 스토리지</a></li><li class="depth-0"><a href="#516-efs와-ebs-비교" data-for="516-efs와-ebs-비교">5.16 EFS와 EBS 비교</a></li><li class="depth-0"><a href="#517-amazon-fsx-개요" data-for="517-amazon-fsx-개요">5.17 Amazon FSx 개요</a></li><li class="depth-2"><a href="#fsx-for-windows-file-server" data-for="fsx-for-windows-file-server">FSx for Windows File Server</a></li><li class="depth-2"><a href="#fsx-for-lustre" data-for="fsx-for-lustre">FSx for Lustre</a></li><li class="depth-0"><a href="#518-스토리지-선택-기준-정리" data-for="518-스토리지-선택-기준-정리">5.18 스토리지 선택 기준 정리</a></li><li class="depth-0"><a href="#519-실습-1--s3-버킷-생성-및-객체-업로드" data-for="519-실습-1--s3-버킷-생성-및-객체-업로드">5.19 실습 1 : S3 버킷 생성 및 객체 업로드</a></li><li class="depth-1"><a href="#5191-버킷-생성" data-for="5191-버킷-생성">5.19.1 버킷 생성</a></li><li class="depth-1"><a href="#5192-파일-업로드" data-for="5192-파일-업로드">5.19.2 파일 업로드</a></li><li class="depth-1"><a href="#5193-cli로-버킷-목록-확인" data-for="5193-cli로-버킷-목록-확인">5.19.3 CLI로 버킷 목록 확인</a></li><li class="depth-2"><a href="#명령어-설명" data-for="명령어-설명">명령어 설명</a></li><li class="depth-2"><a href="#aws-s3" data-for="aws-s3">aws s3</a></li><li class="depth-2"><a href="#ls" data-for="ls">ls</a></li><li class="depth-1"><a href="#5194-특정-버킷의-객체-목록-확인" data-for="5194-특정-버킷의-객체-목록-확인">5.19.4 특정 버킷의 객체 목록 확인</a></li><li class="depth-0"><a href="#520-실습-2--cli로-파일-업로드-및-다운로드" data-for="520-실습-2--cli로-파일-업로드-및-다운로드">5.20 실습 2 : CLI로 파일 업로드 및 다운로드</a></li><li class="depth-1"><a href="#5201-파일-업로드" data-for="5201-파일-업로드">5.20.1 파일 업로드</a></li><li class="depth-2"><a href="#명령어-설명-1" data-for="명령어-설명-1">명령어 설명</a></li><li class="depth-2"><a href="#cp" data-for="cp">cp</a></li><li class="depth-2"><a href="#sampletxt" data-for="sampletxt">sample.txt</a></li><li class="depth-2"><a href="#s3" data-for="s3">s3://.../</a></li><li class="depth-1"><a href="#5202-파일-다운로드" data-for="5202-파일-다운로드">5.20.2 파일 다운로드</a></li><li class="depth-0"><a href="#521-실습-3--s3-정적-웹사이트-호스팅" data-for="521-실습-3--s3-정적-웹사이트-호스팅">5.21 실습 3 : S3 정적 웹사이트 호스팅</a></li><li class="depth-1"><a href="#5211-indexhtml-파일-생성" data-for="5211-indexhtml-파일-생성">5.21.1 index.html 파일 생성</a></li><li class="depth-1"><a href="#5212-파일-업로드" data-for="5212-파일-업로드">5.21.2 파일 업로드</a></li><li class="depth-1"><a href="#5213-정적-웹사이트-활성화" data-for="5213-정적-웹사이트-활성화">5.21.3 정적 웹사이트 활성화</a></li><li class="depth-1"><a href="#5214-공개-접근-정책-설정" data-for="5214-공개-접근-정책-설정">5.21.4 공개 접근 정책 설정</a></li><li class="depth-1"><a href="#5215-웹사이트-접속-확인" data-for="5215-웹사이트-접속-확인">5.21.5 웹사이트 접속 확인</a></li><li class="depth-0"><a href="#522-실습-4--efs-생성-및-ec2-마운트" data-for="522-실습-4--efs-생성-및-ec2-마운트">5.22 실습 4 : EFS 생성 및 EC2 마운트</a></li><li class="depth-1"><a href="#5221-사전-준비" data-for="5221-사전-준비">5.22.1 사전 준비</a></li><li class="depth-1"><a href="#5222-efs-생성" data-for="5222-efs-생성">5.22.2 EFS 생성</a></li><li class="depth-1"><a href="#5223-efs-보안-그룹" data-for="5223-efs-보안-그룹">5.22.3 EFS 보안 그룹</a></li><li class="depth-1"><a href="#5224-ec2에-패키지-설치" data-for="5224-ec2에-패키지-설치">5.22.4 EC2에 패키지 설치</a></li><li class="depth-2"><a href="#명령어-설명-2" data-for="명령어-설명-2">명령어 설명</a></li><li class="depth-2"><a href="#amazon-efs-utils" data-for="amazon-efs-utils">amazon-efs-utils</a></li><li class="depth-1"><a href="#5225-마운트-디렉터리-생성" data-for="5225-마운트-디렉터리-생성">5.22.5 마운트 디렉터리 생성</a></li><li class="depth-1"><a href="#5226-efs-마운트" data-for="5226-efs-마운트">5.22.6 EFS 마운트</a></li><li class="depth-2"><a href="#명령어-설명-3" data-for="명령어-설명-3">명령어 설명</a></li><li class="depth-2"><a href="#mount" data-for="mount">mount</a></li><li class="depth-2"><a href="#t-efs" data-for="t-efs">t efs</a></li><li class="depth-2"><a href="#fs-" data-for="fs-">fs-...:/</a></li><li class="depth-2"><a href="#efs" data-for="efs">/efs</a></li><li class="depth-1"><a href="#5227-동작-확인" data-for="5227-동작-확인">5.22.7 동작 확인</a></li><li class="depth-0"><a href="#523-efs-활용-시나리오-설명" data-for="523-efs-활용-시나리오-설명">5.23 EFS 활용 시나리오 설명</a></li><li class="depth-0"><a href="#524-스토리지-아키텍처-설계-포인트" data-for="524-스토리지-아키텍처-설계-포인트">5.24 스토리지 아키텍처 설계 포인트</a></li><li class="depth-2"><a href="#1-저장-방식부터-구분해야-함" data-for="1-저장-방식부터-구분해야-함">1. 저장 방식부터 구분해야 함</a></li><li class="depth-2"><a href="#2-접근-패턴을-봐야-함" data-for="2-접근-패턴을-봐야-함">2. 접근 패턴을 봐야 함</a></li><li class="depth-2"><a href="#3-비용과-보관-기간을-고려해야-함" data-for="3-비용과-보관-기간을-고려해야-함">3. 비용과 보관 기간을 고려해야 함</a></li><li class="depth-2"><a href="#4-보안-설정이-매우-중요함" data-for="4-보안-설정이-매우-중요함">4. 보안 설정이 매우 중요함</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

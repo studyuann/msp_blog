@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>7장 기본 AWS 아키텍처</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="7장 기본 AWS 아키텍처"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="7장 기본 AWS 아키텍처"/><meta name="twitter:description" content="7장 기본 AWS 아키텍처 7.1 웹 서비스 아키텍처의 기본 개념 대부분의 웹 서비스는 사용자 요청을 처리하는 서버와 데이터를 저장하는 저장소로 구성된다. 가장 단순한 형태는 다음과 같다."/><meta property="og:description" content="7장 기본 AWS 아키텍처 7.1 웹 서비스 아키텍처의 기본 개념 대부분의 웹 서비스는 사용자 요청을 처리하는 서버와 데이터를 저장하는 저장소로 구성된다. 가장 단순한 형태는 다음과 같다."/><meta property="og:image:alt" content="7장 기본 AWS 아키텍처 7.1 웹 서비스 아키텍처의 기본 개념 대부분의 웹 서비스는 사용자 요청을 처리하는 서버와 데이터를 저장하는 저장소로 구성된다. 가장 단순한 형태는 다음과 같다."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/7장-기본-AWS-아키텍처"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/7장-기본-AWS-아키텍처"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="7장 기본 AWS 아키텍처 7.1 웹 서비스 아키텍처의 기본 개념 대부분의 웹 서비스는 사용자 요청을 처리하는 서버와 데이터를 저장하는 저장소로 구성된다. 가장 단순한 형태는 다음과 같다."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/7장-기본-AWS-아키텍처"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-42"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-42" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>7장 기본 AWS 아키텍처</a></div></nav><h1 class="article-title">7장 기본 AWS 아키텍처</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>16 min read</span></p></div></div><article class="popover-hint"><h1 id="7장-기본-aws-아키텍처">7장 기본 AWS 아키텍처<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7장-기본-aws-아키텍처" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="71-웹-서비스-아키텍처의-기본-개념">7.1 웹 서비스 아키텍처의 기본 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#71-웹-서비스-아키텍처의-기본-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>대부분의 웹 서비스는 사용자 요청을 처리하는 서버와 데이터를 저장하는 저장소로 구성된다.</p>
+<p>가장 단순한 형태는 다음과 같다.</p>
+<pre><code>User
+ │
+Internet
+ │
+Web Server
+ │
+Database
+</code></pre>
+<p>이 구조에서 Web Server는 사용자의 요청을 받아 화면을 제공하거나 애플리케이션 로직을 수행한다.</p>
+<p>Database는 회원 정보, 게시글, 주문 정보, 설정 정보와 같은 데이터를 저장한다.</p>
+<p>이 구조는 웹 서비스의 기본 원리를 이해하기에는 적절하지만, 실제 운영 환경에서는 여러 한계가 존재한다.</p>
+<p>대표적인 문제는 다음과 같다.</p>
+<pre><code>단일 서버 장애 시 전체 서비스 중단
+사용자 증가 시 성능 저하
+서버 역할 분리가 부족함
+보안 구성이 단순함
+확장 구조가 비효율적임
+</code></pre>
+<p>실제 서비스 환경에서는 트래픽 증가, 장애 대응, 데이터 보호, 운영 효율성을 고려해야 하므로</p>
+<p>서버 역할을 분리하고 네트워크를 나누는 방식으로 아키텍처를 설계한다.</p>
+<p>AWS에서는 이러한 요구를 반영하여</p>
+<p>VPC, Subnet, Load Balancer, Auto Scaling, RDS, S3 등의 서비스를 조합해</p>
+<p>확장 가능하고 안정적인 웹 서비스 구조를 만든다.</p>
+<hr/>
+<h2 id="72-기본-aws-웹-아키텍처">7.2 기본 AWS 웹 아키텍처<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#72-기본-aws-웹-아키텍처" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS에서 웹 서비스를 구성할 때의 기본 구조는 다음과 같다.</p>
+<pre><code>User
+ │
+Internet
+ │
+Internet Gateway
+ │
+Public Subnet
+ │
+Load Balancer / Web Tier
+ │
+Private Subnet
+ │
+Application Tier / Database Tier
+</code></pre>
+<p>이 구조의 핵심은 네트워크를 외부 공개 영역과 내부 보호 영역으로 나누는 데 있다.</p>
+<p>중요한 구성 요소는 다음과 같다.</p>
+<pre><code>VPC
+Internet Gateway
+Public Subnet
+Private Subnet
+Load Balancer
+EC2
+Database
+</code></pre>
+<p>각 요소의 역할은 다음과 같다.</p>
+<h3 id="vpc">VPC<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#vpc" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>VPC는 AWS 안에 만드는 논리적인 사설 네트워크이다.</p>
+<p>웹 서버, 애플리케이션 서버, 데이터베이스를 원하는 네트워크 구조 안에 배치할 수 있다.</p>
+<h3 id="internet-gateway">Internet Gateway<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#internet-gateway" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Internet Gateway는 VPC가 인터넷과 통신할 수 있도록 해주는 구성 요소이다.</p>
+<p>인터넷에서 접근해야 하는 리소스는 이 경로를 통해 외부와 연결된다.</p>
+<h3 id="public-subnet">Public Subnet<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#public-subnet" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Public Subnet은 인터넷과 연결 가능한 서브넷이다.</p>
+<p>보통 외부 요청을 받는 Load Balancer, NAT Gateway, Bastion Host 등이 여기에 위치한다.</p>
+<h3 id="private-subnet">Private Subnet<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#private-subnet" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Private Subnet은 인터넷에서 직접 접근할 수 없는 서브넷이다.</p>
+<p>애플리케이션 서버, 데이터베이스, 내부 API, 캐시 서버와 같은 자원을 배치한다.</p>
+<p>AWS 아키텍처의 기본 방향은 다음과 같다.</p>
+<pre><code>외부에서 접근해야 하는 자원만 Public에 배치
+내부 처리 자원은 Private에 배치
+데이터 저장 계층은 외부에 직접 노출하지 않음
+</code></pre>
+<hr/>
+<h2 id="73-public-tier">7.3 Public Tier<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#73-public-tier" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Public Tier는 인터넷과 직접 연결되는 계층이다.</p>
+<p>외부 요청을 처음 받아들이는 진입 지점 역할을 한다.</p>
+<p>이 계층에는 다음과 같은 리소스가 주로 위치한다.</p>
+<pre><code>Application Load Balancer
+Network Load Balancer
+Bastion Host
+NAT Gateway
+Public Web Server
+</code></pre>
+<p>구조는 다음과 같이 표현할 수 있다.</p>
+<pre><code>Internet
+ │
+Internet Gateway
+ │
+Public Subnet
+ │
+Public Tier Resources
+</code></pre>
+<p>Public Tier의 특징은 다음과 같다.</p>
+<pre><code>인터넷과 직접 통신 가능
+외부 요청 수신
+내부 계층으로 요청 전달
+보안 그룹과 라우팅 설정 중요
+최소한의 자원만 공개
+</code></pre>
+<p>예를 들어 Application Load Balancer는</p>
+<p>외부 사용자로부터 HTTP 또는 HTTPS 요청을 받아 내부 서버로 전달하므로</p>
+<p>일반적으로 Public Subnet에 배치한다.</p>
+<p>반면 Database처럼 외부에 직접 공개할 필요가 없는 자원은 Public Tier에 두지 않는다.</p>
+<hr/>
+<h2 id="74-private-tier">7.4 Private Tier<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#74-private-tier" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Private Tier는 인터넷에서 직접 접근할 수 없는 계층이다.</p>
+<p>서비스의 핵심 로직과 데이터 처리가 이루어지는 영역이다.</p>
+<p>이 계층에는 다음과 같은 리소스가 위치한다.</p>
+<pre><code>Application Server
+Database
+Internal API
+Backend Service
+Cache
+Message Processing Service
+</code></pre>
+<p>구조는 다음과 같다.</p>
+<pre><code>Public Tier
+ │
+Private Subnet
+ │
+Application Server
+ │
+Database
+</code></pre>
+<p>Private Tier의 특징은 다음과 같다.</p>
+<pre><code>외부 직접 접근 불가
+내부 서비스 처리
+민감한 데이터 저장 가능
+보안 강화에 유리
+접근 경로를 제한 가능
+</code></pre>
+<p>사용자의 요청은 먼저 Public Tier를 거친 뒤</p>
+<p>필요에 따라 Private Tier의 애플리케이션 서버로 전달된다.</p>
+<p>애플리케이션 서버는 비즈니스 로직을 수행한 뒤 데이터베이스에 접근한다.</p>
+<p>이 구조를 사용하면 데이터베이스나 내부 서버가 인터넷에 직접 노출되지 않으므로</p>
+<p>보안성이 크게 향상된다.</p>
+<hr/>
+<h2 id="75-3-tier-architecture">7.5 3-Tier Architecture<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#75-3-tier-architecture" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS에서 가장 대표적으로 사용하는 웹 서비스 구조는 3-Tier Architecture이다.</p>
+<p>3-Tier Architecture는 시스템을 다음 세 계층으로 나누는 방식이다.</p>
+<pre><code>Presentation Tier
+Application Tier
+Database Tier
+</code></pre>
+<p>웹 서비스 구조로 표현하면 다음과 같다.</p>
+<pre><code>User
+ │
+Load Balancer
+ │
+Web Tier
+ │
+Application Tier
+ │
+Database Tier
+</code></pre>
+<p>각 계층의 역할은 다음과 같다.</p>
+<h3 id="web-tier">Web Tier<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#web-tier" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자 요청을 수신하고 화면을 제공하거나</p>
+<p>요청을 애플리케이션 계층으로 전달하는 역할을 한다.</p>
+<h3 id="application-tier">Application Tier<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#application-tier" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>비즈니스 로직을 수행한다.</p>
+<p>회원가입, 로그인, 주문 처리, API 실행, 권한 검사와 같은 핵심 처리가 이 계층에서 수행된다.</p>
+<h3 id="database-tier">Database Tier<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#database-tier" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>서비스 데이터를 저장한다.</p>
+<p>관계형 데이터, 키-값 데이터, 캐시 데이터 등이 이 계층에 포함된다.</p>
+<p>AWS에서 3-Tier 구조를 적용하면 다음과 같이 정리할 수 있다.</p>
+<pre><code>User
+ │
+Internet
+ │
+Application Load Balancer
+ │
+Public Subnet
+ │
+Web Tier
+ │
+Private Subnet
+ │
+Application Tier
+ │
+Database Tier
+</code></pre>
+<p>이 구조의 장점은 다음과 같다.</p>
+<pre><code>역할 분리 가능
+계층별 보안 정책 적용 가능
+필요한 계층만 개별 확장 가능
+장애 영향 범위 축소
+운영 구조 명확화
+</code></pre>
+<p>예를 들어 웹 요청이 많아지면 Web Tier를 늘릴 수 있고,</p>
+<p>비즈니스 로직 처리량이 증가하면 Application Tier 중심으로 확장할 수 있다.</p>
+<hr/>
+<h2 id="76-load-balancer">7.6 Load Balancer<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#76-load-balancer" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Load Balancer는 여러 서버에 트래픽을 분산하는 구성 요소이다.</p>
+<p>사용자는 하나의 접점으로 접속하고, Load Balancer가 요청을 여러 서버로 나누어 전달한다.</p>
+<p>구조는 다음과 같다.</p>
+<pre><code>User
+ │
+Load Balancer
+ │
+ ├─ EC2
+ ├─ EC2
+ └─ EC2
+</code></pre>
+<p>Load Balancer의 주요 기능은 다음과 같다.</p>
+<pre><code>트래픽 분산
+고가용성 향상
+장애 서버 제외
+확장 구조 단순화
+하나의 진입점 제공
+</code></pre>
+<p>AWS에서는 Elastic Load Balancing 서비스를 사용하며, 대표적으로 다음 두 종류를 자주 사용한다.</p>
+<pre><code>Application Load Balancer
+Network Load Balancer
+</code></pre>
+<h3 id="application-load-balancer">Application Load Balancer<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#application-load-balancer" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>ALB는 HTTP, HTTPS 기반 웹 서비스에 적합하다.</p>
+<p>경로 기반 라우팅, 호스트 기반 라우팅, SSL 종료 같은 기능을 제공한다.</p>
+<p>예를 들면 다음과 같이 요청을 분기할 수 있다.</p>
+<pre><code>/api      → API Server
+/admin    → Admin Server
+/images   → Static Service
+</code></pre>
+<h3 id="network-load-balancer">Network Load Balancer<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#network-load-balancer" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>NLB는 TCP, UDP 기반 고성능 네트워크 처리에 적합하다.</p>
+<p>지연 시간이 낮고 대량의 네트워크 트래픽을 빠르게 처리할 수 있다.</p>
+<p>웹 서비스 기초 학습 단계에서는 ALB를 먼저 이해하는 것이 일반적이다.</p>
+<hr/>
+<h2 id="77-auto-scaling">7.7 Auto Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#77-auto-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Auto Scaling은 서버 수를 자동으로 조절하는 기능이다.</p>
+<p>트래픽이 증가하면 인스턴스를 자동으로 추가하고, 트래픽이 감소하면 인스턴스를 자동으로 줄인다.</p>
+<p>구조는 다음과 같다.</p>
+<pre><code>Load Balancer
+ │
+Auto Scaling Group
+ │
+EC2 Instances
+</code></pre>
+<p>기본 개념은 다음과 같다.</p>
+<h3 id="auto-scaling-group">Auto Scaling Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#auto-scaling-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>동일한 역할을 수행하는 EC2 집합을 관리한다.</p>
+<p>최소 인스턴스 수, 최대 인스턴스 수, 원하는 인스턴스 수를 지정할 수 있다.</p>
+<h3 id="scaling-policy">Scaling Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#scaling-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>언제 인스턴스를 늘리거나 줄일지 결정하는 정책이다.</p>
+<p>예를 들어 CPU 사용률이 70%를 초과하면 인스턴스를 추가하도록 설정할 수 있다.</p>
+<p>예시는 다음과 같다.</p>
+<pre><code>평상시
+EC2 2대 운영
+
+트래픽 증가
+EC2 4대 또는 6대로 자동 확장
+</code></pre>
+<p>Auto Scaling의 장점은 다음과 같다.</p>
+<pre><code>자동 확장
+자동 축소
+장애 인스턴스 자동 교체
+비용 최적화
+운영 자동화
+</code></pre>
+<p>Auto Scaling은 단순히 서버 수를 늘리는 기능만이 아니라</p>
+<p>비정상 인스턴스를 감지하고 새 인스턴스로 교체하여 서비스 상태를 유지하는 역할도 한다.</p>
+<hr/>
+<h2 id="78-정적-콘텐츠-처리">7.8 정적 콘텐츠 처리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#78-정적-콘텐츠-처리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>웹 서비스에는 다양한 정적 파일이 존재한다.</p>
+<pre><code>이미지
+CSS
+JavaScript
+동영상
+폰트 파일
+문서 파일
+다운로드 파일
+</code></pre>
+<p>이러한 파일을 모두 웹 서버가 직접 제공하면</p>
+<p>웹 서버는 동적 요청 처리와 파일 전송을 동시에 수행해야 하므로 부담이 커질 수 있다.</p>
+<p>AWS에서는 정적 파일을 Amazon S3에 저장하고,</p>
+<p>웹 서비스와 분리하여 제공하는 구조를 자주 사용한다.</p>
+<p>구조는 다음과 같다.</p>
+<pre><code>           ┌────────────→ Web Server
+User ──────┤
+           └────────────→ S3 (Static Files)
+</code></pre>
+<p>동작 과정은 다음과 같다.</p>
+<pre><code>1. 사용자가 웹 서비스에 접속한다.
+2. Web Server 또는 Application이 HTML 응답을 제공한다.
+3. HTML 안에는 이미지, CSS, JavaScript 파일 경로가 포함된다.
+4. 브라우저는 필요한 정적 파일을 S3에서 가져온다.
+</code></pre>
+<p>이 구조의 장점은 다음과 같다.</p>
+<pre><code>웹 서버 부하 감소
+정적 파일 저장에 적합
+대용량 파일 처리에 유리
+높은 확장성 제공
+비용 효율적
+</code></pre>
+<p>실무에서는 S3 앞단에 CloudFront를 두는 경우가 많다.</p>
+<pre><code>           ┌────────────→ Load Balancer → Web / App Server
+User ──────┤
+           └────────────→ CloudFront → S3
+</code></pre>
+<p>이 구조를 사용하면 정적 콘텐츠를 엣지 로케이션에 캐싱할 수 있으므로</p>
+<p>응답 속도가 향상되고 원본 저장소에 대한 요청도 줄어든다.</p>
+<hr/>
+<h2 id="79-기본-aws-아키텍처-예시">7.9 기본 AWS 아키텍처 예시<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#79-기본-aws-아키텍처-예시" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>지금까지의 내용을 종합하면 AWS의 기본 웹 서비스 아키텍처는 다음과 같이 정리할 수 있다.</p>
+<pre><code>User
+ │
+Internet
+ │
+Application Load Balancer
+ │
+Public Subnet
+ │
+Web Tier
+ │
+Private Subnet
+ │
+Application Tier
+ │
+Database Tier
+</code></pre>
+<p>정적 콘텐츠 처리까지 포함하면 다음과 같다.</p>
+<pre><code>           ┌────────────→ Application Load Balancer → Web Tier → Application Tier → Database Tier
+User ──────┤
+           └────────────→ S3 (Static Files)
+</code></pre>
+<p>CloudFront를 포함한 형태는 다음과 같다.</p>
+<pre><code>           ┌────────────→ Application Load Balancer → Web Tier → Application Tier → Database Tier
+User ──────┤
+           └────────────→ CloudFront → S3
+</code></pre>
+<p>각 구성 요소의 역할은 다음과 같다.</p>
+<pre><code>Application Load Balancer  : 사용자 요청 분산
+Web Tier                   : 요청 수신, 화면 제공, 전달 처리
+Application Tier           : 비즈니스 로직 수행
+Database Tier              : 데이터 저장
+S3                         : 정적 콘텐츠 저장
+CloudFront                 : 정적 콘텐츠 캐싱 및 전송 최적화
+Auto Scaling               : 서버 자동 확장 및 복구
+</code></pre>
+<p>이 구조를 통해 다음과 같은 목표를 달성할 수 있다.</p>
+<pre><code>확장성
+고가용성
+보안성
+운영 효율성
+비용 최적화
+</code></pre>
+<hr/>
+<h2 id="요약">요약<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#요약" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS의 기본 웹 서비스 아키텍처는 일반적으로 다음과 같이 구성된다.</p>
+<pre><code>Internet
+ │
+Load Balancer
+ │
+Web Tier
+ │
+Application Tier
+ │
+Database Tier
+</code></pre>
+<p>정적 콘텐츠는 다음과 같은 별도 경로로 처리한다.</p>
+<pre><code>S3
+또는
+CloudFront + S3
+</code></pre>
+<p>이 구조를 사용하면 다음과 같은 효과를 얻을 수 있다.</p>
+<pre><code>확장성 향상
+가용성 향상
+보안 강화
+운영 자동화
+비용 효율화
+</code></pre>
+<p>웹 서비스 아키텍처를 설계할 때는</p>
+<p>외부 공개 영역과 내부 보호 영역을 구분하고,</p>
+<p>정적 요청과 동적 요청의 처리 경로를 분리하며,</p>
+<p>확장과 장애 대응이 가능한 구조로 설계하는 것이 중요하다.</p>
+<hr/></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-40" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#7장-기본-aws-아키텍처" data-for="7장-기본-aws-아키텍처">7장 기본 AWS 아키텍처</a></li><li class="depth-1"><a href="#71-웹-서비스-아키텍처의-기본-개념" data-for="71-웹-서비스-아키텍처의-기본-개념">7.1 웹 서비스 아키텍처의 기본 개념</a></li><li class="depth-1"><a href="#72-기본-aws-웹-아키텍처" data-for="72-기본-aws-웹-아키텍처">7.2 기본 AWS 웹 아키텍처</a></li><li class="depth-2"><a href="#vpc" data-for="vpc">VPC</a></li><li class="depth-2"><a href="#internet-gateway" data-for="internet-gateway">Internet Gateway</a></li><li class="depth-2"><a href="#public-subnet" data-for="public-subnet">Public Subnet</a></li><li class="depth-2"><a href="#private-subnet" data-for="private-subnet">Private Subnet</a></li><li class="depth-1"><a href="#73-public-tier" data-for="73-public-tier">7.3 Public Tier</a></li><li class="depth-1"><a href="#74-private-tier" data-for="74-private-tier">7.4 Private Tier</a></li><li class="depth-1"><a href="#75-3-tier-architecture" data-for="75-3-tier-architecture">7.5 3-Tier Architecture</a></li><li class="depth-2"><a href="#web-tier" data-for="web-tier">Web Tier</a></li><li class="depth-2"><a href="#application-tier" data-for="application-tier">Application Tier</a></li><li class="depth-2"><a href="#database-tier" data-for="database-tier">Database Tier</a></li><li class="depth-1"><a href="#76-load-balancer" data-for="76-load-balancer">7.6 Load Balancer</a></li><li class="depth-2"><a href="#application-load-balancer" data-for="application-load-balancer">Application Load Balancer</a></li><li class="depth-2"><a href="#network-load-balancer" data-for="network-load-balancer">Network Load Balancer</a></li><li class="depth-1"><a href="#77-auto-scaling" data-for="77-auto-scaling">7.7 Auto Scaling</a></li><li class="depth-2"><a href="#auto-scaling-group" data-for="auto-scaling-group">Auto Scaling Group</a></li><li class="depth-2"><a href="#scaling-policy" data-for="scaling-policy">Scaling Policy</a></li><li class="depth-1"><a href="#78-정적-콘텐츠-처리" data-for="78-정적-콘텐츠-처리">7.8 정적 콘텐츠 처리</a></li><li class="depth-1"><a href="#79-기본-aws-아키텍처-예시" data-for="79-기본-aws-아키텍처-예시">7.9 기본 AWS 아키텍처 예시</a></li><li class="depth-1"><a href="#요약" data-for="요약">요약</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-클라우드-기술-기초(TESS)" class="internal">AWS 클라우드 기술 기초(TESS)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

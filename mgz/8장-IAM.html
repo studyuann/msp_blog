@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>8장 IAM</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="8장 IAM"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="8장 IAM"/><meta name="twitter:description" content="8장 IAM 1. IAM 개요 IAM (Identity and Access Management) IAM은 AWS 리소스에 대한 인증과 권한 관리를 담당하는 서비스이다. AWS 환경에서는 수많은 리소스가 존재한다."/><meta property="og:description" content="8장 IAM 1. IAM 개요 IAM (Identity and Access Management) IAM은 AWS 리소스에 대한 인증과 권한 관리를 담당하는 서비스이다. AWS 환경에서는 수많은 리소스가 존재한다."/><meta property="og:image:alt" content="8장 IAM 1. IAM 개요 IAM (Identity and Access Management) IAM은 AWS 리소스에 대한 인증과 권한 관리를 담당하는 서비스이다. AWS 환경에서는 수많은 리소스가 존재한다."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/8장-IAM"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/8장-IAM"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="8장 IAM 1. IAM 개요 IAM (Identity and Access Management) IAM은 AWS 리소스에 대한 인증과 권한 관리를 담당하는 서비스이다. AWS 환경에서는 수많은 리소스가 존재한다."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/8장-IAM"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-45"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-45" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>8장 IAM</a></div></nav><h1 class="article-title">8장 IAM</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>23 min read</span></p></div></div><article class="popover-hint"><h1 id="8장-iam">8장 IAM<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8장-iam" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h1 id="1-iam-개요">1. IAM 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-iam-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="iam-identity-and-access-management">IAM (Identity and Access Management)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#iam-identity-and-access-management" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>IAM은 AWS 리소스에 대한 인증과 권한 관리를 담당하는 서비스이다.</p>
+<p>AWS 환경에서는 수많은 리소스가 존재한다.</p>
+<pre><code>EC2
+S3
+RDS
+Lambda
+VPC
+DynamoDB
+CloudWatch
+</code></pre>
+<p>이 리소스들은 아무나 접근할 수 있으면 안 된다.</p>
+<p>누가 로그인할 수 있는지, 누가 어떤 서비스에 접근할 수 있는지, 어떤 작업까지 허용할 것인지를 제어해야 한다.</p>
+<p>IAM은 바로 이 문제를 해결하기 위한 서비스이다.</p>
+<p>AWS에서는 기본적으로 다음 질문에 답할 수 있어야 한다.</p>
+<pre><code>누가(Who)
+어떤 방식으로 인증되었는가(Authentication)
+무엇을 할 수 있는가(What Action)
+어떤 리소스에 대해 가능한가(Which Resource)
+</code></pre>
+<p>예를 들면 다음과 같은 통제가 필요하다.</p>
+<pre><code>사용자 A는 S3 버킷 조회만 가능
+사용자 B는 EC2 시작/중지만 가능
+EC2 인스턴스는 특정 S3 버킷에만 접근 가능
+Lambda 함수는 DynamoDB 테이블 읽기만 가능
+</code></pre>
+<p>즉 IAM은 단순히 “사용자 계정 생성” 서비스가 아니라,</p>
+<p><strong>AWS 환경 전체의 접근 통제 체계</strong>라고 이해해야 한다.</p>
+<hr/>
+<h1 id="2-인증과-권한의-차이">2. 인증과 권한의 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-인증과-권한의-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM을 이해할 때 먼저 구분해야 하는 개념이 있다.</p>
+<pre><code>Authentication
+Authorization
+</code></pre>
+<hr/>
+<h2 id="21-authentication">2.1 Authentication<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#21-authentication" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Authentication은 “누구인지 확인하는 과정”이다.</p>
+<p>예를 들어 다음이 인증에 해당한다.</p>
+<pre><code>사용자 이름과 비밀번호로 콘솔 로그인
+Access Key와 Secret Key로 CLI 호출
+AssumeRole을 통해 임시 자격 증명 획득
+</code></pre>
+<p>즉 AWS는 먼저 요청을 보낸 주체가 누구인지 확인한다.</p>
+<hr/>
+<h2 id="22-authorization">2.2 Authorization<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#22-authorization" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Authorization은 “무엇을 할 수 있는지 판단하는 과정”이다.</p>
+<p>예를 들면 다음과 같다.</p>
+<pre><code>이 사용자는 S3 ListBucket 가능
+이 역할은 EC2 DescribeInstances 가능
+이 Lambda 실행 역할은 DynamoDB PutItem 불가
+</code></pre>
+<p>즉 인증이 “누구인가”라면, 인가는 “무엇을 할 수 있는가”이다.</p>
+<p>IAM은 이 두 과정을 모두 다루지만, 특히 <strong>인가</strong>, 즉 권한 제어가 핵심이다.</p>
+<hr/>
+<h1 id="3-iam의-핵심-구성-요소">3. IAM의 핵심 구성 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-iam의-핵심-구성-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM은 다음 요소를 중심으로 동작한다.</p>
+<pre><code>IAM User
+IAM Group
+IAM Role
+IAM Policy
+</code></pre>
+<p>이 네 가지를 단순히 외우는 것이 아니라, 서로 어떤 관계인지 이해해야 한다.</p>
+<ul>
+<li><strong>User</strong>: 사람이나 애플리케이션을 위한 개별 주체</li>
+<li><strong>Group</strong>: 여러 User를 묶는 권한 관리 단위</li>
+<li><strong>Role</strong>: 임시로 권한을 사용할 수 있게 만든 역할</li>
+<li><strong>Policy</strong>: 실제 권한 내용을 정의한 문서</li>
+</ul>
+<p>즉 권한은 보통 다음 구조로 연결된다.</p>
+<pre><code>Principal
+  └ Policy
+      └ AWS Resource
+</code></pre>
+<p>여기서 Principal은 User, Role, AWS Service 등이 될 수 있다.</p>
+<hr/>
+<h1 id="4-iam-user">4. IAM User<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-iam-user" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="iam-user란-무엇인가">IAM User란 무엇인가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#iam-user란-무엇인가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>IAM User는 AWS에 로그인하거나 API를 호출할 수 있는 개별 사용자 계정이다.</p>
+<p>보통 사람 단위 계정으로 많이 설명하지만, 과거에는 애플리케이션용 고정 계정처럼 사용하기도 했음.</p>
+<p>다만 현재 운영 기준에서는 애플리케이션에는 가능하면 User보다 Role 사용을 권장한다.</p>
+<p>예를 들면 다음과 같다.</p>
+<pre><code>개발자 계정
+운영자 계정
+보안 관리자 계정
+</code></pre>
+<p>IAM User의 특징은 다음과 같다.</p>
+<pre><code>AWS Management Console 로그인 가능
+Access Key 생성 가능
+개별 Policy 부여 가능
+Group에 소속될 수 있음
+MFA 설정 가능
+</code></pre>
+<p>구조는 다음과 같이 볼 수 있다.</p>
+<pre><code>IAM User
+   │
+   ▼
+IAM Policy
+   │
+   ▼
+AWS Service / Resource
+</code></pre>
+<hr/>
+<h2 id="41-iam-user가-필요한-이유">4.1 IAM User가 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#41-iam-user가-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>조직에서 여러 명이 AWS를 사용한다면, 같은 계정을 공유해서는 안 된다.</p>
+<p>예를 들어 모든 사람이 Root 계정을 같이 사용하면 다음 문제가 발생한다.</p>
+<pre><code>누가 어떤 작업을 했는지 추적 어려움
+권한 분리 불가능
+보안 사고 시 영향 범위 큼
+비밀번호 노출 시 전체 계정 위험
+</code></pre>
+<p>따라서 사용자별로 IAM User를 분리하거나, 더 나아가 IAM Identity Center 같은 중앙 인증 체계를 사용해야 한다.</p>
+<hr/>
+<h2 id="42-iam-user의-자격-증명">4.2 IAM User의 자격 증명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#42-iam-user의-자격-증명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>IAM User는 여러 방식으로 인증할 수 있다.</p>
+<h3 id="콘솔-로그인">콘솔 로그인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#콘솔-로그인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS Management Console에 웹으로 로그인하는 방식이다.</p>
+<p>필요 요소는 다음과 같다.</p>
+<pre><code>계정 ID 또는 별칭
+사용자 이름
+비밀번호
+MFA 코드(선택 또는 권장)
+</code></pre>
+<h3 id="프로그래밍-방식-접근">프로그래밍 방식 접근<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#프로그래밍-방식-접근" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>CLI, SDK, API 호출을 위해 Access Key / Secret Access Key를 사용할 수 있다.</p>
+<pre><code>Access Key ID
+Secret Access Key
+</code></pre>
+<p>다만 장기 자격 증명은 유출 위험이 있기 때문에, 현재는 가능하면 임시 자격 증명 기반 방식을 더 권장한다.</p>
+<hr/>
+<h1 id="5-iam-group">5. IAM Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-iam-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM Group은 여러 사용자를 묶어서 공통 권한을 부여하기 위한 기능이다.</p>
+<p>실제 운영에서는 사용자마다 같은 정책을 일일이 붙이면 관리가 매우 번거롭다.</p>
+<p>그래서 역할이 비슷한 사용자들을 그룹으로 묶는다.</p>
+<p>예를 들면 다음과 같다.</p>
+<pre><code>Developers
+Operators
+Admins
+Auditors
+</code></pre>
+<p>구조는 다음과 같다.</p>
+<pre><code>User
+ │
+ ▼
+Group
+ │
+ ▼
+Policy
+</code></pre>
+<p>즉 권한을 User에 직접 붙이는 대신 Group에 붙이고, 사용자를 Group에 넣는 방식으로 관리할 수 있다.</p>
+<hr/>
+<h2 id="51-group의-장점">5.1 Group의 장점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#51-group의-장점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>권한 관리 단순화
+일관된 권한 부여 가능
+사용자 추가/삭제 시 운영 편의성 향상
+개별 User에 과도한 직접 정책 연결 감소
+</code></pre>
+<p>예를 들어 Developers 그룹에 EC2 조회 권한과 S3 읽기 권한을 부여해 두면, 새 개발자가 입사했을 때 해당 그룹에만 추가하면 된다.</p>
+<hr/>
+<h2 id="52-group-사용-시-주의점">5.2 Group 사용 시 주의점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#52-group-사용-시-주의점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Group은 <strong>IAM User만 포함</strong>할 수 있다.</p>
+<p>Role은 Group에 넣을 수 없다.</p>
+<p>또한 Group 자체는 로그인 주체가 아니다.</p>
+<p>즉 Group은 권한을 묶는 단위이지, API를 호출하거나 콘솔 로그인하는 주체가 아니다.</p>
+<hr/>
+<h1 id="6-iam-policy">6. IAM Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-iam-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Policy는 AWS 서비스에 대한 권한을 정의하는 JSON 문서이다.</p>
+<p>즉 “무엇을 할 수 있는가”를 기계적으로 표현한 규칙이다.</p>
+<p>예를 들면 다음 권한을 정책으로 정의할 수 있다.</p>
+<pre><code>S3 객체 조회
+EC2 인스턴스 시작
+DynamoDB 테이블 조회
+CloudWatch 로그 읽기
+</code></pre>
+<p>예시 정책은 다음과 같다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">{</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Version&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;2012-10-17&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Statement&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: [</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">    {</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Effect&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;Allow&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Action&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;s3:GetObject&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Resource&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;arn:aws:s3:::example-bucket/*&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">    }</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  ]</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">}</span></span></code></pre></figure>
+<hr/>
+<h2 id="61-policy의-핵심-구성-요소">6.1 Policy의 핵심 구성 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#61-policy의-핵심-구성-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="effect">Effect<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#effect" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>요청을 허용할지 거부할지를 정의한다.</p>
+<pre><code>Allow
+Deny
+</code></pre>
+<h3 id="action">Action<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#action" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>어떤 작업을 할 수 있는지를 정의한다.</p>
+<p>예</p>
+<pre><code>s3:GetObject
+ec2:StartInstances
+dynamodb:PutItem
+</code></pre>
+<h3 id="resource">Resource<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#resource" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>어떤 리소스에 대해 권한이 적용되는지를 정의한다.</p>
+<p>예</p>
+<pre><code>arn:aws:s3:::example-bucket/*
+arn:aws:ec2:ap-northeast-2:123456789012:instance/*
+</code></pre>
+<hr/>
+<h2 id="62-statement-구조">6.2 Statement 구조<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#62-statement-구조" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>정책은 보통 Statement 배열 안에 여러 권한 규칙을 포함한다.</p>
+<p>즉 하나의 정책 안에서 다음을 함께 정의할 수 있다.</p>
+<pre><code>S3 읽기 허용
+특정 버킷만 허용
+특정 작업은 거부
+</code></pre>
+<p>필요에 따라 <code>Condition</code>을 사용해 더 정교한 제어도 가능하다.</p>
+<p>예를 들어 다음과 같은 조건이 가능하다.</p>
+<pre><code>특정 IP에서만 허용
+MFA 사용 시만 허용
+특정 리전에서만 허용
+특정 태그를 가진 리소스만 허용
+</code></pre>
+<p>즉 Policy는 단순 Allow 목록이 아니라, <strong>세밀한 권한 제어 규칙</strong>을 정의하는 도구이다.</p>
+<hr/>
+<h2 id="63-managed-policy와-inline-policy">6.3 Managed Policy와 Inline Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#63-managed-policy와-inline-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>IAM Policy는 크게 두 가지 방식으로 사용할 수 있다.</p>
+<h3 id="managed-policy">Managed Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#managed-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS가 제공하거나, 사용자가 별도로 만들어 여러 대상에 재사용할 수 있는 정책이다.</p>
+<p>예</p>
+<pre><code>AmazonS3ReadOnlyAccess
+AmazonEC2ReadOnlyAccess
+</code></pre>
+<p>장점</p>
+<pre><code>재사용 가능
+중앙 관리 가능
+운영 편의성 높음
+</code></pre>
+<h3 id="inline-policy">Inline Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#inline-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>특정 User, Group, Role에 직접 내장되는 정책이다.</p>
+<p>장점도 있지만, 재사용성과 관리성이 떨어질 수 있다.</p>
+<p>따라서 일반적으로는 Managed Policy 중심으로 운영하는 경우가 많다.</p>
+<hr/>
+<h1 id="7-iam-role">7. IAM Role<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-iam-role" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM Role은 권한을 담고 있지만, 고정 로그인 계정은 아닌 권한 단위이다.</p>
+<p>즉 Role은 사용자가 직접 비밀번호로 로그인하는 계정이 아니라,</p>
+<p>누군가가 필요할 때 <strong>AssumeRole</strong> 해서 임시로 사용하는 권한 집합이다.</p>
+<p>Role은 다음 상황에서 주로 사용된다.</p>
+<pre><code>AWS 서비스가 다른 리소스에 접근할 때
+다른 AWS 계정의 권한을 사용할 때
+일시적으로 관리자 권한으로 승격할 때
+애플리케이션에 장기 Access Key를 주지 않을 때
+</code></pre>
+<hr/>
+<h2 id="71-role-구조">7.1 Role 구조<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#71-role-구조" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>Principal
+   │
+   │ AssumeRole
+   ▼
+IAM Role
+   │
+   ▼
+IAM Policy
+   │
+   ▼
+AWS Resource
+</code></pre>
+<p>즉 Role은 “누가 이 역할을 맡을 수 있는가”와 “이 역할이 어떤 권한을 가지는가”라는 두 가지 요소로 구성된다.</p>
+<ul>
+<li>누가 맡을 수 있는가 → Trust Policy</li>
+<li>어떤 권한을 가지는가 → Permission Policy</li>
+</ul>
+<p>이 구분이 매우 중요하다.</p>
+<hr/>
+<h2 id="72-trust-policy와-permission-policy">7.2 Trust Policy와 Permission Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#72-trust-policy와-permission-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Role을 이해할 때 가장 많이 헷갈리는 부분이다.</p>
+<h3 id="trust-policy">Trust Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#trust-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>누가 이 Role을 사용할 수 있는지를 정의한다.</p>
+<p>예</p>
+<pre><code>EC2 서비스가 이 Role을 사용할 수 있음
+특정 AWS 계정의 사용자가 이 Role을 AssumeRole 할 수 있음
+</code></pre>
+<h3 id="permission-policy">Permission Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#permission-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 Role을 사용한 뒤 어떤 작업이 가능한지를 정의한다.</p>
+<p>예</p>
+<pre><code>S3 버킷 읽기 가능
+DynamoDB PutItem 가능
+CloudWatch Logs 기록 가능
+</code></pre>
+<p>즉 Role은 다음 두 단계를 모두 만족해야 한다.</p>
+<pre><code>1. 이 Role을 맡을 수 있어야 함
+2. 맡은 뒤 허용된 권한 범위 안에서만 작업 가능
+</code></pre>
+<hr/>
+<h1 id="8-aws-서비스에서-role-사용">8. AWS 서비스에서 Role 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-aws-서비스에서-role-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS 서비스는 IAM User처럼 장기 계정을 두고 동작하지 않는다.</p>
+<p>그래서 AWS 서비스가 다른 리소스에 접근해야 할 때는 Role을 사용한다.</p>
+<p>예를 들면 다음과 같다.</p>
+<pre><code>EC2 → S3 접근
+Lambda → DynamoDB 접근
+ECS Task → SQS 접근
+CodeBuild → ECR 접근
+</code></pre>
+<p>구조는 다음과 같다.</p>
+<pre><code>AWS Service
+     │
+     ▼
+IAM Role
+     │
+     ▼
+IAM Policy
+     │
+     ▼
+AWS Resource
+</code></pre>
+<p>예를 들어 EC2가 S3에 접근해야 한다고 하자.</p>
+<p>이때 EC2 인스턴스 안에 Access Key를 직접 저장하는 방식은 보안상 좋지 않다.</p>
+<p>대신 EC2에 Role을 연결하면, EC2는 메타데이터 서비스를 통해 임시 자격 증명을 받아 S3에 접근한다.</p>
+<p>즉 다음 구조가 권장된다.</p>
+<pre><code>EC2 Instance Profile
+   └ IAM Role
+       └ S3 접근 권한
+</code></pre>
+<p>이 방식의 장점은 다음과 같다.</p>
+<pre><code>장기 Access Key 불필요
+자동 순환되는 임시 자격 증명 사용
+권한 변경이 중앙에서 가능
+보안성 향상
+</code></pre>
+<hr/>
+<h1 id="9-assumerole">9. AssumeRole<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#9-assumerole" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AssumeRole은 Role의 권한을 임시로 획득하는 동작이다.</p>
+<p>이 과정은 AWS STS(Security Token Service)를 통해 이루어진다.</p>
+<p>STS는 일정 시간 동안만 유효한 임시 자격 증명을 발급한다.</p>
+<p>특징은 다음과 같다.</p>
+<pre><code>Temporary Credential 생성
+만료 시간 존재
+장기 키보다 안전함
+필요 시점에만 권한 획득 가능
+</code></pre>
+<p>구조는 다음과 같다.</p>
+<pre><code>Principal
+   │
+   │ AssumeRole
+   ▼
+IAM Role
+   │
+   ▼
+Temporary Credential
+</code></pre>
+<p>이 임시 자격 증명은 보통 다음 요소로 구성된다.</p>
+<pre><code>Access Key ID
+Secret Access Key
+Session Token
+Expiration
+</code></pre>
+<p>즉 일반 Access Key와 비슷해 보이지만, <strong>세션 토큰과 만료 시간</strong>이 있다는 점이 다르다.</p>
+<hr/>
+<h1 id="10-역할-전환-switch-role">10. 역할 전환 (Switch Role)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#10-역할-전환-switch-role" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Switch Role은 콘솔에서 다른 Role의 권한으로 전환해서 작업하는 기능이다.</p>
+<p>예를 들면 평소에는 읽기 권한만 가진 개발자가,</p>
+<p>필요할 때만 운영 계정의 특정 Role로 전환해서 작업할 수 있다.</p>
+<p>예</p>
+<pre><code>DeveloperUser → AdminRole 전환
+</code></pre>
+<p>구조는 다음과 같다.</p>
+<pre><code>IAM User
+   │
+   │ Switch Role
+   ▼
+IAM Role
+   │
+   ▼
+추가 권한 사용
+</code></pre>
+<p>콘솔에서는 보통 계정 메뉴에서 역할 전환 기능을 통해 사용한다.</p>
+<p>이 방식은 다음과 같은 운영 모델에 적합하다.</p>
+<pre><code>평상시 저권한 사용
+필요 시 일시적 권한 상승
+작업 후 원래 권한으로 복귀
+</code></pre>
+<p>즉 상시 관리자 권한을 주는 것보다 보안상 더 바람직한 구조를 만들 수 있다.</p>
+<hr/>
+<h1 id="11-policy-평가-개념">11. Policy 평가 개념<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#11-policy-평가-개념" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM은 단순히 정책 하나만 보고 권한을 결정하지 않는다.</p>
+<p>여러 정책과 여러 계층의 제어를 함께 평가한다.</p>
+<p>기본 개념은 다음과 같다.</p>
+<h3 id="기본은-거부">기본은 거부<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#기본은-거부" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>명시적으로 허용되지 않으면 기본적으로 거부된다.</p>
+<pre><code>Implicit Deny
+</code></pre>
+<h3 id="명시적-허용">명시적 허용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명시적-허용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>정책에 Allow가 있으면 해당 작업이 가능할 수 있다.</p>
+<h3 id="명시적-거부-우선">명시적 거부 우선<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명시적-거부-우선" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>어딘가에 명시적 Deny가 있으면 Allow보다 우선한다.</p>
+<pre><code>Explicit Deny > Allow
+</code></pre>
+<p>이 원칙은 매우 중요하다.</p>
+<p>즉 다음처럼 이해하면 된다.</p>
+<pre><code>기본값은 불가
+허용 정책이 있어야 가능
+거부 정책이 있으면 최종적으로 불가
+</code></pre>
+<p>실제 AWS에서는 IAM Policy 외에도 Resource Policy, SCP, Permission Boundary 등 여러 요소가 함께 작동할 수 있다.</p>
+<p>초반에는 우선 <strong>명시적 Deny가 최우선</strong>이라는 점만 정확히 잡으면 된다.</p>
+<hr/>
+<h1 id="12-access-key와-cli-인증">12. Access Key와 CLI 인증<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12-access-key와-cli-인증" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS CLI는 Access Key와 Secret Key 또는 임시 자격 증명을 이용해 AWS API를 호출한다.</p>
+<p>가장 기본적인 설정 명령은 다음과 같다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">aws</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> configure</span></span></code></pre></figure>
+<p>입력 항목은 보통 다음과 같다.</p>
+<pre><code>Access Key ID
+Secret Access Key
+Default region
+Output format
+</code></pre>
+<p>CLI 요청은 내부적으로 서명 과정을 거쳐 AWS에 전달된다.</p>
+<p>즉 단순 평문 비밀번호 전송 방식이 아니라, 요청에 대한 인증 서명을 포함한다.</p>
+<hr/>
+<h2 id="121-access-key-사용-시-주의점">12.1 Access Key 사용 시 주의점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#121-access-key-사용-시-주의점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Access Key는 편리하지만 보안상 매우 민감한 정보이다.</p>
+<p>주의점은 다음과 같다.</p>
+<pre><code>소스코드에 직접 저장하지 않음
+GitHub에 업로드하지 않음
+장기간 고정 사용하지 않음
+주기적으로 회전 필요
+가능하면 Role 기반 임시 자격 증명 사용
+</code></pre>
+<p>특히 EC2, Lambda, ECS 같은 AWS 서비스 내부에서는 Access Key를 직접 넣기보다 Role 사용이 권장된다.</p>
+<hr/>
+<h2 id="122-콘솔-세션-기반-cli-사용">12.2 콘솔 세션 기반 CLI 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#122-콘솔-세션-기반-cli-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>최근에는 콘솔 로그인 또는 IAM Identity Center 기반 세션을 이용해 CLI 인증을 처리하는 방식도 사용한다.</p>
+<p>이 방식은 장기 Access Key 사용을 줄일 수 있다는 장점이 있다.</p>
+<p>즉 운영 환경에서는 가능한 한 <strong>고정 키보다 세션 기반 인증</strong>을 지향하는 것이 좋다.</p>
+<hr/>
+<h1 id="13-iam-보안-모범-사례">13. IAM 보안 모범 사례<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#13-iam-보안-모범-사례" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS IAM 사용 시 다음 원칙을 따르는 것이 좋다.</p>
+<hr/>
+<h2 id="131-최소-권한-원칙">13.1 최소 권한 원칙<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#131-최소-권한-원칙" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>필요한 권한만 부여한다.</p>
+<p>예를 들어 S3 읽기만 필요한 사용자에게 전체 관리자 권한을 주면 안 된다.</p>
+<pre><code>필요 최소한의 Action
+필요 최소한의 Resource
+필요 시에만 권한 부여
+</code></pre>
+<hr/>
+<h2 id="132-root-계정-사용-제한">13.2 Root 계정 사용 제한<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#132-root-계정-사용-제한" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Root 계정은 AWS 계정 자체의 최고 권한 계정이다.</p>
+<p>이 계정은 다음 특징이 있다.</p>
+<pre><code>모든 권한 보유
+과금 및 계정 설정 변경 가능
+복구 어려운 작업 가능
+</code></pre>
+<p>따라서 일상 운영에는 사용하지 않는 것이 원칙이다.</p>
+<p>권장 방식은 다음과 같다.</p>
+<pre><code>Root 계정 MFA 활성화
+일상 작업에 Root 계정 사용하지 않음
+Root 자격 증명 안전하게 보관
+</code></pre>
+<hr/>
+<h2 id="133-가능하면-role-사용">13.3 가능하면 Role 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#133-가능하면-role-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>특히 AWS 서비스 간 권한 부여에서는 장기 Access Key보다 Role 사용이 바람직하다.</p>
+<pre><code>EC2에는 Role 부여
+Lambda에는 Execution Role 부여
+ECS Task에는 Task Role 부여
+</code></pre>
+<p>이렇게 하면 자격 증명을 코드나 서버에 고정 저장하지 않아도 된다.</p>
+<hr/>
+<h2 id="134-mfa-사용">13.4 MFA 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#134-mfa-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>관리자급 계정과 중요한 계정은 MFA를 활성화하는 것이 좋다.</p>
+<p>즉 비밀번호가 유출되더라도 추가 인증 요소가 있어야 로그인할 수 있게 해야 한다.</p>
+<hr/>
+<h2 id="135-공용-정책과-과도한-와일드카드-사용-주의">13.5 공용 정책과 과도한 와일드카드 사용 주의<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#135-공용-정책과-과도한-와일드카드-사용-주의" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>다음과 같은 정책은 매우 위험할 수 있다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">{</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Effect&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;Allow&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Action&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;*&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Resource&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;*&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">}</span></span></code></pre></figure>
+<p>관리자 계정 외에는 이런 형태를 남발하지 않는 것이 좋다.</p>
+<hr/>
+<h2 id="136-장기-키보다-임시-자격-증명-선호">13.6 장기 키보다 임시 자격 증명 선호<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#136-장기-키보다-임시-자격-증명-선호" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>가능하면 STS, Role, Identity Center 같은 방식을 사용해서 임시 자격 증명을 쓰는 것이 더 안전하다.</p>
+<hr/>
+<h1 id="14-iam-구조-정리">14. IAM 구조 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#14-iam-구조-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS IAM 권한 구조는 다음과 같이 정리할 수 있다.</p>
+<pre><code>Principal
+(User / Role / AWS Service)
+        │
+        ▼
+Authentication
+        │
+        ▼
+Policy Evaluation
+        │
+        ▼
+AWS Resource Access
+</code></pre>
+<p>좀 더 단순화하면 다음과 같다.</p>
+<pre><code>Principal
+   └ Policy
+       └ Resource
+</code></pre>
+<p>단, 실제로는 다음 질문을 함께 생각해야 한다.</p>
+<pre><code>누가 요청했는가
+어떤 방식으로 인증되었는가
+어떤 정책이 연결되어 있는가
+명시적 Deny가 있는가
+대상 리소스가 무엇인가
+</code></pre>
+<hr/>
+<h1 id="15-핵심-정리">15. 핵심 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#15-핵심-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>IAM의 핵심 개념은 다음과 같다.</p>
+<pre><code>User   → 사람 또는 개별 주체 계정
+Group  → 여러 User를 묶는 권한 관리 단위
+Policy → 권한을 정의하는 JSON 문서
+Role   → 임시로 권한을 사용할 수 있는 역할
+</code></pre>
+<p>권한 흐름은 다음처럼 이해하면 된다.</p>
+<pre><code>Principal → Policy → Resource
+</code></pre>
+<p>운영 관점에서 특히 중요한 포인트는 다음과 같다.</p>
+<pre><code>기본은 거부
+명시적 Deny가 우선
+장기 Access Key보다 Role 권장
+AWS 서비스에는 Role 사용
+최소 권한 원칙 적용
+Root 계정은 일상 운영에 사용하지 않음
+</code></pre>
+<p>즉 IAM은 단순 계정 관리 기능이 아니라,</p>
+<p>AWS 전체 환경의 보안과 운영 통제를 책임지는 가장 기본적인 보안 체계이다.</p></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-43" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#8장-iam" data-for="8장-iam">8장 IAM</a></li><li class="depth-0"><a href="#1-iam-개요" data-for="1-iam-개요">1. IAM 개요</a></li><li class="depth-1"><a href="#iam-identity-and-access-management" data-for="iam-identity-and-access-management">IAM (Identity and Access Management)</a></li><li class="depth-0"><a href="#2-인증과-권한의-차이" data-for="2-인증과-권한의-차이">2. 인증과 권한의 차이</a></li><li class="depth-1"><a href="#21-authentication" data-for="21-authentication">2.1 Authentication</a></li><li class="depth-1"><a href="#22-authorization" data-for="22-authorization">2.2 Authorization</a></li><li class="depth-0"><a href="#3-iam의-핵심-구성-요소" data-for="3-iam의-핵심-구성-요소">3. IAM의 핵심 구성 요소</a></li><li class="depth-0"><a href="#4-iam-user" data-for="4-iam-user">4. IAM User</a></li><li class="depth-1"><a href="#iam-user란-무엇인가" data-for="iam-user란-무엇인가">IAM User란 무엇인가</a></li><li class="depth-1"><a href="#41-iam-user가-필요한-이유" data-for="41-iam-user가-필요한-이유">4.1 IAM User가 필요한 이유</a></li><li class="depth-1"><a href="#42-iam-user의-자격-증명" data-for="42-iam-user의-자격-증명">4.2 IAM User의 자격 증명</a></li><li class="depth-2"><a href="#콘솔-로그인" data-for="콘솔-로그인">콘솔 로그인</a></li><li class="depth-2"><a href="#프로그래밍-방식-접근" data-for="프로그래밍-방식-접근">프로그래밍 방식 접근</a></li><li class="depth-0"><a href="#5-iam-group" data-for="5-iam-group">5. IAM Group</a></li><li class="depth-1"><a href="#51-group의-장점" data-for="51-group의-장점">5.1 Group의 장점</a></li><li class="depth-1"><a href="#52-group-사용-시-주의점" data-for="52-group-사용-시-주의점">5.2 Group 사용 시 주의점</a></li><li class="depth-0"><a href="#6-iam-policy" data-for="6-iam-policy">6. IAM Policy</a></li><li class="depth-1"><a href="#61-policy의-핵심-구성-요소" data-for="61-policy의-핵심-구성-요소">6.1 Policy의 핵심 구성 요소</a></li><li class="depth-2"><a href="#effect" data-for="effect">Effect</a></li><li class="depth-2"><a href="#action" data-for="action">Action</a></li><li class="depth-2"><a href="#resource" data-for="resource">Resource</a></li><li class="depth-1"><a href="#62-statement-구조" data-for="62-statement-구조">6.2 Statement 구조</a></li><li class="depth-1"><a href="#63-managed-policy와-inline-policy" data-for="63-managed-policy와-inline-policy">6.3 Managed Policy와 Inline Policy</a></li><li class="depth-2"><a href="#managed-policy" data-for="managed-policy">Managed Policy</a></li><li class="depth-2"><a href="#inline-policy" data-for="inline-policy">Inline Policy</a></li><li class="depth-0"><a href="#7-iam-role" data-for="7-iam-role">7. IAM Role</a></li><li class="depth-1"><a href="#71-role-구조" data-for="71-role-구조">7.1 Role 구조</a></li><li class="depth-1"><a href="#72-trust-policy와-permission-policy" data-for="72-trust-policy와-permission-policy">7.2 Trust Policy와 Permission Policy</a></li><li class="depth-2"><a href="#trust-policy" data-for="trust-policy">Trust Policy</a></li><li class="depth-2"><a href="#permission-policy" data-for="permission-policy">Permission Policy</a></li><li class="depth-0"><a href="#8-aws-서비스에서-role-사용" data-for="8-aws-서비스에서-role-사용">8. AWS 서비스에서 Role 사용</a></li><li class="depth-0"><a href="#9-assumerole" data-for="9-assumerole">9. AssumeRole</a></li><li class="depth-0"><a href="#10-역할-전환-switch-role" data-for="10-역할-전환-switch-role">10. 역할 전환 (Switch Role)</a></li><li class="depth-0"><a href="#11-policy-평가-개념" data-for="11-policy-평가-개념">11. Policy 평가 개념</a></li><li class="depth-2"><a href="#기본은-거부" data-for="기본은-거부">기본은 거부</a></li><li class="depth-2"><a href="#명시적-허용" data-for="명시적-허용">명시적 허용</a></li><li class="depth-2"><a href="#명시적-거부-우선" data-for="명시적-거부-우선">명시적 거부 우선</a></li><li class="depth-0"><a href="#12-access-key와-cli-인증" data-for="12-access-key와-cli-인증">12. Access Key와 CLI 인증</a></li><li class="depth-1"><a href="#121-access-key-사용-시-주의점" data-for="121-access-key-사용-시-주의점">12.1 Access Key 사용 시 주의점</a></li><li class="depth-1"><a href="#122-콘솔-세션-기반-cli-사용" data-for="122-콘솔-세션-기반-cli-사용">12.2 콘솔 세션 기반 CLI 사용</a></li><li class="depth-0"><a href="#13-iam-보안-모범-사례" data-for="13-iam-보안-모범-사례">13. IAM 보안 모범 사례</a></li><li class="depth-1"><a href="#131-최소-권한-원칙" data-for="131-최소-권한-원칙">13.1 최소 권한 원칙</a></li><li class="depth-1"><a href="#132-root-계정-사용-제한" data-for="132-root-계정-사용-제한">13.2 Root 계정 사용 제한</a></li><li class="depth-1"><a href="#133-가능하면-role-사용" data-for="133-가능하면-role-사용">13.3 가능하면 Role 사용</a></li><li class="depth-1"><a href="#134-mfa-사용" data-for="134-mfa-사용">13.4 MFA 사용</a></li><li class="depth-1"><a href="#135-공용-정책과-과도한-와일드카드-사용-주의" data-for="135-공용-정책과-과도한-와일드카드-사용-주의">13.5 공용 정책과 과도한 와일드카드 사용 주의</a></li><li class="depth-1"><a href="#136-장기-키보다-임시-자격-증명-선호" data-for="136-장기-키보다-임시-자격-증명-선호">13.6 장기 키보다 임시 자격 증명 선호</a></li><li class="depth-0"><a href="#14-iam-구조-정리" data-for="14-iam-구조-정리">14. IAM 구조 정리</a></li><li class="depth-0"><a href="#15-핵심-정리" data-for="15-핵심-정리">15. 핵심 정리</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-클라우드-기술-기초(TESS)" class="internal">AWS 클라우드 기술 기초(TESS)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

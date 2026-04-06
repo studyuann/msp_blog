@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>7장 AWS 모니터링 및 크기 조정 아키텍처</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="7장 AWS 모니터링 및 크기 조정 아키텍처"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="7장 AWS 모니터링 및 크기 조정 아키텍처"/><meta name="twitter:description" content="7장 AWS 모니터링 및 크기 조정 아키텍처 CloudWatch, Elastic Load Balancing, Auto Scaling 7.1 모니터링과 크기 조정의 필요성 AWS에서 애플리케이션을 운영할 때 서버를 단순히 생성하는 것만으로는 충분하지 않음."/><meta property="og:description" content="7장 AWS 모니터링 및 크기 조정 아키텍처 CloudWatch, Elastic Load Balancing, Auto Scaling 7.1 모니터링과 크기 조정의 필요성 AWS에서 애플리케이션을 운영할 때 서버를 단순히 생성하는 것만으로는 충분하지 않음."/><meta property="og:image:alt" content="7장 AWS 모니터링 및 크기 조정 아키텍처 CloudWatch, Elastic Load Balancing, Auto Scaling 7.1 모니터링과 크기 조정의 필요성 AWS에서 애플리케이션을 운영할 때 서버를 단순히 생성하는 것만으로는 충분하지 않음."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/7장-AWS-모니터링-및-크기-조정-아키텍처"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/7장-AWS-모니터링-및-크기-조정-아키텍처"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="7장 AWS 모니터링 및 크기 조정 아키텍처 CloudWatch, Elastic Load Balancing, Auto Scaling 7.1 모니터링과 크기 조정의 필요성 AWS에서 애플리케이션을 운영할 때 서버를 단순히 생성하는 것만으로는 충분하지 않음."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/7장-AWS-모니터링-및-크기-조정-아키텍처"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-40"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-40" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>7장 AWS 모니터링 및 크기 조정 아키텍처</a></div></nav><h1 class="article-title">7장 AWS 모니터링 및 크기 조정 아키텍처</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>29 min read</span></p></div></div><article class="popover-hint"><h1 id="7장-aws-모니터링-및-크기-조정-아키텍처">7장 AWS 모니터링 및 크기 조정 아키텍처<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7장-aws-모니터링-및-크기-조정-아키텍처" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="cloudwatch-elastic-load-balancing-auto-scaling">CloudWatch, Elastic Load Balancing, Auto Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cloudwatch-elastic-load-balancing-auto-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<hr/>
+<h1 id="71-모니터링과-크기-조정의-필요성">7.1 모니터링과 크기 조정의 필요성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#71-모니터링과-크기-조정의-필요성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS에서 애플리케이션을 운영할 때 서버를 단순히 생성하는 것만으로는 충분하지 않음.</p>
+<p>실제 운영 환경에서는 다음과 같은 문제가 항상 발생할 수 있음.</p>
+<ul>
+<li>트래픽 증가</li>
+<li>특정 인스턴스의 CPU 과부하</li>
+<li>메모리 부족</li>
+<li>디스크 사용량 증가</li>
+<li>애플리케이션 장애</li>
+<li>특정 인스턴스의 비정상 종료</li>
+<li>응답 지연 증가</li>
+</ul>
+<p>이런 상황을 사람이 수동으로 계속 확인하고 대응하는 방식은 확장성이 낮고 장애 대응도 늦어짐.</p>
+<p>따라서 AWS에서는 다음 3가지 축을 함께 사용함.</p>
+<ul>
+<li><strong>CloudWatch</strong> : 상태를 수집하고 관찰함</li>
+<li><strong>ELB</strong> : 트래픽을 여러 대상에 분산함</li>
+<li><strong>Auto Scaling</strong> : 인스턴스 수를 자동으로 조정함</li>
+</ul>
+<p>즉, 이 장의 핵심은 다음과 같음.</p>
+<pre><code>관찰하고, 분산하고, 자동 확장한다.
+</code></pre>
+<hr/>
+<h1 id="72-운영-환경에서-단일-서버의-한계">7.2 운영 환경에서 단일 서버의 한계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#72-운영-환경에서-단일-서버의-한계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>초기 학습 단계에서는 EC2 인스턴스 1대로 웹 서버를 띄우는 실습을 많이 수행함.</p>
+<p>하지만 실제 운영 환경에서 단일 서버 구조는 다음과 같은 한계를 가짐.</p>
+<h3 id="1-단일-장애점spof">1. 단일 장애점(SPOF)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-단일-장애점spof" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>인스턴스 1대가 중단되면 서비스 전체가 중단됨.</p>
+<h3 id="2-확장성-부족">2. 확장성 부족<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-확장성-부족" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>트래픽이 증가해도 서버를 자동으로 늘릴 수 없음.</p>
+<h3 id="3-유지보수-어려움">3. 유지보수 어려움<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-유지보수-어려움" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>패치나 재부팅 시 서비스 중단이 발생할 수 있음.</p>
+<h3 id="4-부하-집중">4. 부하 집중<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-부하-집중" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>특정 시점에 요청이 몰리면 응답 지연이 커짐.</p>
+<p>따라서 운영 환경에서는 보통 다음 구조를 목표로 설계함.</p>
+<pre><code>사용자
+  │
+Load Balancer
+  │
+여러 대의 EC2
+  │
+Auto Scaling
+</code></pre>
+<p>그리고 이 구조를 안정적으로 운영하기 위해 지속적인 관찰 수단이 필요하며, 그 역할을 CloudWatch가 담당함.</p>
+<hr/>
+<h1 id="73-amazon-cloudwatch-개요">7.3 Amazon CloudWatch 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#73-amazon-cloudwatch-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Amazon CloudWatch는 AWS 리소스와 애플리케이션의 상태를 모니터링하는 서비스임.</p>
+<p>단순히 숫자를 보여주는 대시보드가 아니라, 운영 상태를 수집하고 시각화하고, 임계값을 기준으로 경보를 발생시키며, 자동 조치까지 연결할 수 있는 서비스임.</p>
+<p>CloudWatch의 핵심 역할</p>
+<ul>
+<li>메트릭 수집</li>
+<li>로그 수집</li>
+<li>경보 생성</li>
+<li>대시보드 시각화</li>
+<li>이벤트 기반 자동화 연계</li>
+</ul>
+<p>CloudWatch를 이해할 때는 다음 구성 요소를 구분해서 보는 것이 중요함.</p>
+<ul>
+<li>Metrics</li>
+<li>Logs</li>
+<li>Alarms</li>
+<li>Dashboards</li>
+<li>Events / EventBridge 연계</li>
+</ul>
+<hr/>
+<h1 id="74-cloudwatch-metrics">7.4 CloudWatch Metrics<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#74-cloudwatch-metrics" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>메트릭은 시간에 따라 변화하는 수치 데이터임.</p>
+<p>예를 들어 EC2의 CPU 사용률, 네트워크 패킷 수, 디스크 읽기 횟수 같은 값이 메트릭에 해당함.</p>
+<p>대표적인 예</p>
+<ul>
+<li>CPUUtilization</li>
+<li>NetworkIn</li>
+<li>NetworkOut</li>
+<li>DiskReadOps</li>
+<li>DiskWriteOps</li>
+<li>StatusCheckFailed</li>
+</ul>
+<p>이 메트릭들은 시간 축을 따라 누적되며, 운영자는 이를 통해 현재 시스템 상태와 변화 추이를 확인할 수 있음.</p>
+<hr/>
+<h2 id="741-메트릭의-의미">7.4.1 메트릭의 의미<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#741-메트릭의-의미" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>메트릭을 단순한 숫자로 보면 안 됨.</p>
+<p>각 메트릭은 시스템 상태를 간접적으로 보여주는 신호임.</p>
+<p>예를 들어</p>
+<h3 id="cpuutilization">CPUUtilization<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cpuutilization" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>CPU 사용률이 높다는 것은 해당 인스턴스가 연산 작업을 많이 수행하고 있다는 뜻임.</p>
+<p>웹 서버라면 요청량이 증가했을 수 있고, 배치 작업이 동작 중일 수도 있음.</p>
+<h3 id="networkin--networkout">NetworkIn / NetworkOut<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#networkin--networkout" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>네트워크 유입/유출량이 증가했다는 것은 트래픽이 증가하고 있다는 의미일 수 있음.</p>
+<h3 id="status-check">Status Check<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#status-check" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>인스턴스 상태 검사 실패는 하드웨어, 네트워크, 운영체제 수준의 이상 신호일 수 있음.</p>
+<p>즉, CloudWatch는 단순 관찰 도구가 아니라 <strong>시스템 상태 해석 도구</strong>라고 볼 수 있음.</p>
+<hr/>
+<h2 id="742-기본-메트릭과-커스텀-메트릭">7.4.2 기본 메트릭과 커스텀 메트릭<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#742-기본-메트릭과-커스텀-메트릭" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudWatch 메트릭은 크게 두 종류로 볼 수 있음.</p>
+<h3 id="기본-메트릭">기본 메트릭<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#기본-메트릭" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS 서비스가 자동으로 제공하는 메트릭임.</p>
+<p>예를 들어 EC2 CPU 사용률, ALB 요청 수 같은 값이 이에 해당함.</p>
+<h3 id="커스텀-메트릭">커스텀 메트릭<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#커스텀-메트릭" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>사용자가 직접 수집해서 올리는 메트릭임.</p>
+<p>예를 들어</p>
+<ul>
+<li>애플리케이션 처리 건수</li>
+<li>로그인 실패 횟수</li>
+<li>큐 적재 건수</li>
+<li>비즈니스 KPI</li>
+</ul>
+<p>같은 값은 사용자가 직접 정의해서 보낼 수 있음.</p>
+<p>즉, 기본 메트릭은 인프라 중심이고, 커스텀 메트릭은 애플리케이션/업무 중심이라고 볼 수 있음.</p>
+<hr/>
+<h1 id="75-cloudwatch-logs">7.5 CloudWatch Logs<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#75-cloudwatch-logs" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>메트릭이 숫자 기반 상태 정보라면, 로그는 상세한 텍스트 기반 기록임.</p>
+<p>예를 들어 애플리케이션 에러 메시지, 웹 서버 접근 로그, 시스템 로그 등이 이에 해당함.</p>
+<p>CloudWatch Logs의 역할</p>
+<ul>
+<li>로그 중앙 수집</li>
+<li>로그 보관</li>
+<li>로그 검색</li>
+<li>로그 분석</li>
+<li>특정 패턴 감지</li>
+</ul>
+<p>운영 환경에서는 로그가 여러 서버에 흩어져 있으면 분석이 매우 불편함.</p>
+<p>CloudWatch Logs를 사용하면 여러 인스턴스의 로그를 중앙에서 관리할 수 있음.</p>
+<hr/>
+<h2 id="751-로그와-메트릭의-차이">7.5.1 로그와 메트릭의 차이<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#751-로그와-메트릭의-차이" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>메트릭</th><th>로그</th></tr></thead><tbody><tr><td>형태</td><td>숫자 기반</td><td>텍스트 기반</td></tr><tr><td>목적</td><td>상태 추세 파악</td><td>원인 분석</td></tr><tr><td>예</td><td>CPU 85%</td><td>오류 메시지 stack trace</td></tr><tr><td>활용</td><td>모니터링, 경보</td><td>디버깅, 감사, 분석</td></tr></tbody></table></div>
+<p>즉,</p>
+<ul>
+<li><strong>메트릭은 이상 징후를 감지하는 데 강함</strong></li>
+<li><strong>로그는 원인을 분석하는 데 강함</strong></li>
+</ul>
+<p>이라고 정리할 수 있음.</p>
+<hr/>
+<h2 id="752-로그-그룹과-로그-스트림">7.5.2 로그 그룹과 로그 스트림<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#752-로그-그룹과-로그-스트림" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudWatch Logs는 보통 다음 구조로 이해하면 됨.</p>
+<ul>
+<li><strong>Log Group</strong> : 관련 로그들의 상위 묶음</li>
+<li><strong>Log Stream</strong> : 개별 인스턴스/프로세스/실행 단위의 로그 흐름</li>
+</ul>
+<p>예를 들어</p>
+<pre><code>/application/web
+  ├ instance-1
+  ├ instance-2
+  └ instance-3
+</code></pre>
+<p>이런 구조로 볼 수 있음.</p>
+<p>즉, 로그 그룹은 논리적 구분이고, 로그 스트림은 실제 발생 단위에 가깝다고 보면 됨.</p>
+<hr/>
+<h1 id="76-cloudwatch-alarm">7.6 CloudWatch Alarm<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#76-cloudwatch-alarm" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudWatch Alarm은 메트릭이 특정 조건을 만족할 때 경보를 발생시키는 기능임.</p>
+<p>단순히 “상태를 본다”에서 끝나는 것이 아니라, <strong>이상 상태를 자동으로 감지</strong>하는 단계로 넘어가는 것임.</p>
+<p>예</p>
+<ul>
+<li>CPU 사용률이 80% 이상</li>
+<li>ALB 응답 지연이 2초 초과</li>
+<li>UnHealthyHostCount가 1 이상</li>
+<li>네트워크 유입량이 급증</li>
+</ul>
+<p>Alarm은 운영자가 항상 화면을 보고 있지 않아도 문제를 인지할 수 있게 만드는 핵심 장치임.</p>
+<hr/>
+<h2 id="761-alarm의-구성-요소">7.6.1 Alarm의 구성 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#761-alarm의-구성-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Alarm은 보통 다음 요소로 구성됨.</p>
+<ul>
+<li>대상 메트릭</li>
+<li>임계값(Threshold)</li>
+<li>비교 조건</li>
+<li>평가 기간(Evaluation Period)</li>
+<li>통계 방식(Average, Sum 등)</li>
+<li>알림/조치 대상</li>
+</ul>
+<p>예를 들어 CPU 사용률 경보를 만든다고 하면 다음 요소를 정해야 함.</p>
+<ul>
+<li>어떤 인스턴스의 CPU를 볼 것인지</li>
+<li>몇 % 이상이면 이상으로 볼 것인지</li>
+<li>1분 평균인지, 5분 평균인지</li>
+<li>한 번 넘으면 경보인지, 여러 번 연속인지</li>
+<li>경보 시 누구에게 알릴지</li>
+</ul>
+<p>즉, Alarm은 단순한 숫자 비교가 아니라 <strong>운영 정책을 수치로 모델링한 것</strong>임.</p>
+<hr/>
+<h2 id="762-alarm-상태">7.6.2 Alarm 상태<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#762-alarm-상태" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudWatch Alarm은 보통 다음 상태를 가짐.</p>
+<ul>
+<li><strong>OK</strong></li>
+<li><strong>ALARM</strong></li>
+<li><strong>INSUFFICIENT_DATA</strong></li>
+</ul>
+<h3 id="ok">OK<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ok" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>정상 상태임.</p>
+<h3 id="alarm">ALARM<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#alarm" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>임계값 조건을 만족해서 경보가 발생한 상태임.</p>
+<h3 id="insufficient_data">INSUFFICIENT_DATA<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#insufficient_data" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>아직 판단할 데이터가 부족한 상태임.</p>
+<p>특히 교육 중 자주 헷갈리는 부분이 <code>INSUFFICIENT_DATA</code>임.</p>
+<p>이 상태는 무조건 오류를 뜻하는 것이 아니라, 아직 충분한 샘플이 쌓이지 않았거나 메트릭이 수집되지 않은 상태일 수 있음.</p>
+<hr/>
+<h1 id="77-cloudwatch-dashboard">7.7 CloudWatch Dashboard<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#77-cloudwatch-dashboard" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Dashboard는 여러 메트릭과 그래프를 한 화면에 시각적으로 배치하는 기능임.</p>
+<p>운영자가 시스템 상태를 빠르게 파악할 수 있도록 도와줌.</p>
+<p>대시보드에 보통 포함하는 항목</p>
+<ul>
+<li>EC2 CPU 사용률</li>
+<li>ALB 요청 수</li>
+<li>ALB 응답 시간</li>
+<li>RDS CPU 및 연결 수</li>
+<li>Auto Scaling 인스턴스 수</li>
+<li>에러 건수</li>
+<li>캐시 히트율</li>
+</ul>
+<p>대시보드는 단순히 “예쁘게 보기 위한 화면”이 아니라,</p>
+<p>운영자가 <strong>무엇을 중요하게 볼 것인가를 구조화한 관찰 도구</strong>임.</p>
+<hr/>
+<h1 id="78-elastic-load-balancing-개요">7.8 Elastic Load Balancing 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#78-elastic-load-balancing-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Elastic Load Balancing은 들어오는 트래픽을 여러 대상(Target)에 분산하는 서비스임.</p>
+<p>운영 환경에서는 여러 대의 서버가 동시에 서비스를 제공하는 경우가 많으므로, 요청을 적절히 나누는 장치가 필요함.</p>
+<p>ELB의 역할</p>
+<ul>
+<li>트래픽 분산</li>
+<li>장애 인스턴스 제외</li>
+<li>고가용성 지원</li>
+<li>SSL/TLS 종료 가능</li>
+<li>애플리케이션 계층 라우팅 지원</li>
+</ul>
+<p>즉, ELB는 단순히 “앞단 프록시”가 아니라 <strong>가용성과 확장성의 중심 구성요소</strong>임.</p>
+<hr/>
+<h1 id="79-로드-밸런서가-필요한-이유">7.9 로드 밸런서가 필요한 이유<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#79-로드-밸런서가-필요한-이유" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>서버가 2대 이상 있다고 해서 자동으로 고가용성이 되는 것은 아님.</p>
+<p>사용자 요청이 어느 서버로 갈지 제어할 수 있어야 하며, 장애가 난 서버로는 요청을 보내지 않아야 함.</p>
+<p>로드 밸런서가 없다면 다음과 같은 문제가 있음.</p>
+<ul>
+<li>사용자가 특정 인스턴스 주소를 직접 알아야 함</li>
+<li>서버 추가/삭제 시 클라이언트 구성이 복잡해짐</li>
+<li>장애 서버를 자동 제외하기 어려움</li>
+<li>SSL 인증서 관리가 분산됨</li>
+</ul>
+<p>로드 밸런서를 두면 사용자 입장에서는 하나의 진입점만 보면 됨.</p>
+<pre><code>사용자
+  │
+Load Balancer
+  ├ App Server 1
+  ├ App Server 2
+  └ App Server 3
+</code></pre>
+<p>이 구조를 통해 뒤쪽 인스턴스 수가 바뀌더라도 사용자 진입점은 유지됨.</p>
+<hr/>
+<h1 id="710-elb-종류">7.10 ELB 종류<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#710-elb-종류" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS의 로드 밸런서는 대표적으로 다음 종류가 있음.</p>
+<ul>
+<li>ALB (Application Load Balancer)</li>
+<li>NLB (Network Load Balancer)</li>
+<li>GWLB (Gateway Load Balancer)</li>
+</ul>
+<p>ARC 과정에서는 보통 <strong>ALB 중심</strong>으로 설명하는 것이 가장 자연스러움.</p>
+<hr/>
+<h2 id="7101-alb">7.10.1 ALB<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7101-alb" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>ALB는 7계층(Application Layer, HTTP/HTTPS) 로드 밸런서임.</p>
+<p>특징</p>
+<ul>
+<li>HTTP/HTTPS 트래픽 처리</li>
+<li>경로 기반 라우팅</li>
+<li>호스트 기반 라우팅</li>
+<li>SSL 종료 가능</li>
+<li>웹 애플리케이션에 적합</li>
+</ul>
+<p>예를 들어</p>
+<ul>
+<li><code>/api/*</code> 요청은 API 서버로</li>
+<li><code>/images/*</code> 요청은 이미지 서버로</li>
+<li><code>admin.example.com</code>은 관리자 서버로</li>
+</ul>
+<p>보낼 수 있음.</p>
+<p>즉, ALB는 단순 분산뿐 아니라 <strong>애플리케이션 인식 라우팅</strong>이 가능함.</p>
+<hr/>
+<h2 id="7102-nlb">7.10.2 NLB<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7102-nlb" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>NLB는 4계층(Network Layer, TCP/UDP) 로드 밸런서임.</p>
+<p>특징</p>
+<ul>
+<li>매우 높은 성능</li>
+<li>낮은 지연시간</li>
+<li>TCP/UDP 처리</li>
+<li>고정 IP 지원 가능</li>
+</ul>
+<p>웹 애플리케이션보다는 네트워크 수준 처리나 매우 높은 처리량이 중요한 경우에 적합함.</p>
+<hr/>
+<h2 id="7103-gateway-load-balancer">7.10.3 Gateway Load Balancer<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7103-gateway-load-balancer" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>보안 장비나 네트워크 가상 어플라이언스를 투명하게 삽입할 때 사용함.</p>
+<p>일반적인 웹 아키텍처 입문 단계에서는 깊게 다루지 않아도 됨.</p>
+<hr/>
+<h1 id="711-target-group">7.11 Target Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#711-target-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>로드 밸런서는 직접 인스턴스를 향해 요청을 보내는 것이 아니라, 보통 <strong>Target Group</strong>을 통해 대상을 관리함.</p>
+<p>Target Group의 역할</p>
+<ul>
+<li>대상 인스턴스/서비스 묶음 관리</li>
+<li>Health Check 수행</li>
+<li>어떤 요청을 어디로 보낼지 연결</li>
+</ul>
+<p>즉, 로드 밸런서와 인스턴스 사이의 중간 추상화 계층이라고 보면 됨.</p>
+<p>장점</p>
+<ul>
+<li>인스턴스 교체가 쉬움</li>
+<li>Auto Scaling과 연동이 쉬움</li>
+<li>Health Check를 기준으로 정상 대상만 유지 가능함</li>
+</ul>
+<hr/>
+<h1 id="712-health-check">7.12 Health Check<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#712-health-check" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Health Check는 대상 서버가 정상적으로 요청을 처리할 수 있는지 확인하는 기능임.</p>
+<p>로드 밸런서는 Health Check 결과를 바탕으로 정상 대상에게만 트래픽을 보냄.</p>
+<p>예를 들어 인스턴스가 살아 있어도 애플리케이션이 죽어 있을 수 있음.</p>
+<p>이 경우 단순히 서버가 켜져 있다는 이유만으로 요청을 보내면 안 됨.</p>
+<p>따라서 Health Check는 보통 다음을 확인함.</p>
+<ul>
+<li>특정 포트 응답 여부</li>
+<li>특정 URL 응답 코드</li>
+<li>응답 시간</li>
+<li>연속 성공/실패 횟수</li>
+</ul>
+<p>즉, Health Check는 <strong>가용성 판단 기준</strong>임.</p>
+<hr/>
+<h2 id="7121-health-check의-중요성">7.12.1 Health Check의 중요성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7121-health-check의-중요성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Health Check를 제대로 설계하지 않으면 다음 문제가 발생함.</p>
+<ul>
+<li>장애 서버에도 계속 요청이 감</li>
+<li>실제로는 문제인데 정상으로 판단함</li>
+<li>너무 엄격해서 잠깐 느린 서버도 제외됨</li>
+</ul>
+<p>따라서 Health Check는 단순 설정값이 아니라, 애플리케이션 특성을 반영해야 함.</p>
+<p>예를 들어</p>
+<ul>
+<li>단순 정적 웹 서버면 <code>/</code>만 확인해도 될 수 있음</li>
+<li>실제 앱 상태를 보려면 <code>/health</code> 같은 전용 엔드포인트가 필요할 수 있음</li>
+</ul>
+<hr/>
+<h1 id="713-고가용성과-로드-밸런서">7.13 고가용성과 로드 밸런서<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#713-고가용성과-로드-밸런서" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>로드 밸런서는 고가용성 구조의 핵심임.</p>
+<p>특히 여러 AZ에 인스턴스를 분산 배치할 때 효과가 큼.</p>
+<p>예</p>
+<pre><code>ALB
+ ├ EC2 (AZ-a)
+ └ EC2 (AZ-c)
+</code></pre>
+<p>이 구조에서는 한 AZ의 인스턴스가 장애를 일으켜도 다른 AZ의 정상 인스턴스가 계속 요청을 처리할 수 있음.</p>
+<p>즉, 고가용성은 단순히 서버 수를 늘리는 것이 아니라</p>
+<ul>
+<li>여러 서버를 두고</li>
+<li>여러 AZ에 분산하고</li>
+<li>로드 밸런서로 연결하고</li>
+<li>Health Check로 비정상 서버를 제외하는</li>
+</ul>
+<p>조합으로 완성됨.</p>
+<hr/>
+<h1 id="714-auto-scaling-개요">7.14 Auto Scaling 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#714-auto-scaling-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Auto Scaling은 인스턴스 수를 자동으로 늘리거나 줄이는 기능임.</p>
+<p>즉, 트래픽 양이나 상태 변화에 따라 서버 수를 동적으로 조정함.</p>
+<p>이 기능이 필요한 이유는 다음과 같음.</p>
+<ul>
+<li>트래픽은 항상 일정하지 않음</li>
+<li>피크 시간과 비피크 시간이 다름</li>
+<li>항상 최대 부하 기준으로 서버를 유지하면 비용이 낭비됨</li>
+<li>갑작스러운 부하 증가에 수동 대응은 느림</li>
+</ul>
+<p>따라서 Auto Scaling은 <strong>가용성과 비용 효율성을 동시에 달성하기 위한 핵심 기능</strong>임.</p>
+<hr/>
+<h1 id="715-auto-scaling-group">7.15 Auto Scaling Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#715-auto-scaling-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Auto Scaling은 보통 <strong>Auto Scaling Group(ASG)</strong> 단위로 동작함.</p>
+<p>ASG는 동일한 설정을 가진 인스턴스 집합을 관리하는 논리 그룹임.</p>
+<p>ASG가 관리하는 요소</p>
+<ul>
+<li>최소 인스턴스 수</li>
+<li>최대 인스턴스 수</li>
+<li>원하는 인스턴스 수</li>
+<li>배치할 서브넷/AZ</li>
+<li>사용할 시작 템플릿</li>
+<li>확장/축소 정책</li>
+<li>Health Check 기준</li>
+</ul>
+<p>즉, ASG는 단순히 “서버를 늘리는 기능”이 아니라 <strong>동일한 서버 군을 자동 관리하는 엔진</strong>이라고 볼 수 있음.</p>
+<hr/>
+<h2 id="7151-desired--min--max-capacity">7.15.1 Desired / Min / Max Capacity<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7151-desired--min--max-capacity" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>ASG에서 매우 중요한 3가지 값이 있음.</p>
+<h3 id="desired-capacity">Desired Capacity<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#desired-capacity" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>현재 유지하려는 인스턴스 수임.</p>
+<h3 id="minimum-capacity">Minimum Capacity<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#minimum-capacity" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 아래로는 절대 줄이지 않음.</p>
+<h3 id="maximum-capacity">Maximum Capacity<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#maximum-capacity" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 이상으로는 늘리지 않음.</p>
+<p>예를 들어</p>
+<ul>
+<li>Min = 2</li>
+<li>Desired = 2</li>
+<li>Max = 6</li>
+</ul>
+<p>이라면 평소 2대를 유지하다가 부하가 높아지면 최대 6대까지 확장할 수 있음.</p>
+<p>이 세 값은 Auto Scaling의 동작 범위를 정의하는 핵심 파라미터임.</p>
+<hr/>
+<h1 id="716-launch-template">7.16 Launch Template<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#716-launch-template" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>ASG가 새 인스턴스를 생성하려면 어떤 이미지와 사양으로 만들지 정의해야 함.</p>
+<p>그 역할을 하는 것이 Launch Template임.</p>
+<p>포함 정보 예</p>
+<ul>
+<li>AMI</li>
+<li>인스턴스 타입</li>
+<li>보안 그룹</li>
+<li>IAM Role</li>
+<li>User Data</li>
+<li>Key Pair</li>
+<li>EBS 설정</li>
+</ul>
+<p>즉, Launch Template은 “새 서버를 어떤 형태로 복제할 것인가”를 정의하는 청사진임.</p>
+<hr/>
+<h1 id="717-scaling-policy">7.17 Scaling Policy<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#717-scaling-policy" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Scaling Policy는 언제 인스턴스를 늘리고 줄일지 정하는 정책임.</p>
+<p>확장 정책이 없다면 ASG는 인스턴스 수를 어떻게 바꿔야 하는지 판단할 수 없음.</p>
+<p>대표적인 방식</p>
+<ul>
+<li>Target Tracking Scaling</li>
+<li>Step Scaling</li>
+<li>Scheduled Scaling</li>
+</ul>
+<hr/>
+<h2 id="7171-target-tracking-scaling">7.17.1 Target Tracking Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7171-target-tracking-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>가장 이해하기 쉬운 방식임.</p>
+<p>특정 메트릭을 목표 값으로 유지하도록 자동 조정함.</p>
+<p>예</p>
+<ul>
+<li>평균 CPU 사용률 50% 유지</li>
+<li>ALB 요청 수 per target 일정 수준 유지</li>
+</ul>
+<p>즉, 시스템이 특정 목표 상태를 유지하도록 자동으로 인스턴스 수를 조정하는 방식임.</p>
+<p>이 방식은 개념적으로 가장 직관적이어서 교육 과정에서 설명하기 좋음.</p>
+<hr/>
+<h2 id="7172-step-scaling">7.17.2 Step Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7172-step-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>임계값 구간에 따라 다른 규모로 확장/축소하는 방식임.</p>
+<p>예</p>
+<ul>
+<li>CPU 60% 초과 시 1대 증가</li>
+<li>CPU 80% 초과 시 2대 증가</li>
+</ul>
+<p>즉, 조건에 따라 단계적으로 반응하도록 설계하는 방식임.</p>
+<hr/>
+<h2 id="7173-scheduled-scaling">7.17.3 Scheduled Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7173-scheduled-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>특정 시간에 맞춰 인스턴스 수를 변경하는 방식임.</p>
+<p>예</p>
+<ul>
+<li>오전 9시 전에 4대로 늘림</li>
+<li>야간에는 2대로 줄임</li>
+</ul>
+<p>트래픽 패턴이 예측 가능할 때 유용함.</p>
+<hr/>
+<h1 id="718-scale-out과-scale-in">7.18 Scale Out과 Scale In<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#718-scale-out과-scale-in" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Auto Scaling에서 반드시 구분해야 할 개념임.</p>
+<h3 id="scale-out">Scale Out<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#scale-out" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>인스턴스 수를 늘리는 것임.</p>
+<h3 id="scale-in">Scale In<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#scale-in" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>인스턴스 수를 줄이는 것임.</p>
+<p>학생들이 흔히 “오토스케일링 = 늘어나는 것”으로만 이해하는데, 실제로는 줄이는 것도 매우 중요함.</p>
+<p>특히 비용 최적화 측면에서는 Scale In이 핵심일 수 있음.</p>
+<hr/>
+<h1 id="719-수평-확장과-수직-확장">7.19 수평 확장과 수직 확장<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#719-수평-확장과-수직-확장" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>확장을 이해할 때는 두 가지 방식을 구분해야 함.</p>
+<h3 id="수직-확장scale-up">수직 확장(Scale Up)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#수직-확장scale-up" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>기존 인스턴스를 더 큰 사양으로 바꾸는 것임.</p>
+<p>예</p>
+<ul>
+<li>t3.micro → t3.large</li>
+</ul>
+<p>장점</p>
+<ul>
+<li>구조가 단순함</li>
+</ul>
+<p>한계</p>
+<ul>
+<li>물리적 상한이 있음</li>
+<li>재시작이나 변경 작업이 필요할 수 있음</li>
+</ul>
+<h3 id="수평-확장scale-out">수평 확장(Scale Out)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#수평-확장scale-out" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>같은 인스턴스를 여러 대로 늘리는 것임.</p>
+<p>예</p>
+<ul>
+<li>웹 서버 1대 → 3대</li>
+</ul>
+<p>장점</p>
+<ul>
+<li>고가용성과 확장성에 유리함</li>
+<li>ELB, Auto Scaling과 잘 맞음</li>
+</ul>
+<p>운영 환경에서는 보통 수평 확장을 더 선호함.</p>
+<hr/>
+<h1 id="720-cloudwatch와-auto-scaling의-연계">7.20 CloudWatch와 Auto Scaling의 연계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#720-cloudwatch와-auto-scaling의-연계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudWatch와 Auto Scaling은 서로 독립된 서비스가 아니라 강하게 연결됨.</p>
+<p>동작 흐름 예</p>
+<pre><code>CloudWatch가 CPU 사용률 상승 감지
+   │
+Alarm 또는 Scaling Policy 조건 만족
+   │
+Auto Scaling Group이 인스턴스 추가
+</code></pre>
+<p>즉,</p>
+<ul>
+<li>CloudWatch는 관찰하고</li>
+<li>Auto Scaling은 반응함</li>
+</ul>
+<p>이 관계로 이해하면 됨.</p>
+<hr/>
+<h1 id="721-elb와-auto-scaling의-연계">7.21 ELB와 Auto Scaling의 연계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#721-elb와-auto-scaling의-연계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>ELB와 Auto Scaling도 함께 동작해야 의미가 있음.</p>
+<p>인스턴스 수가 늘어나도 로드 밸런서가 그 사실을 모르고 있으면 요청 분산이 되지 않음.</p>
+<p>Auto Scaling Group과 Target Group을 연동하면 다음 흐름이 가능함.</p>
+<ul>
+<li>새 인스턴스 생성</li>
+<li>인스턴스 초기화</li>
+<li>Health Check 통과</li>
+<li>Target Group 등록</li>
+<li>트래픽 분산 시작</li>
+</ul>
+<p>반대로 축소 시에는</p>
+<ul>
+<li>대상 제외</li>
+<li>연결 정리</li>
+<li>인스턴스 종료</li>
+</ul>
+<p>순서로 처리됨.</p>
+<p>즉, ELB와 ASG의 결합은 <strong>확장 가능한 서비스 운영의 기본 패턴</strong>임.</p>
+<hr/>
+<h1 id="722-운영-관점의-설계-포인트">7.22 운영 관점의 설계 포인트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#722-운영-관점의-설계-포인트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이 장의 서비스들은 각각 독립적으로 볼 수도 있지만, 실제 운영에서는 하나의 흐름으로 묶어서 설계해야 함.</p>
+<hr/>
+<h2 id="7221-모니터링-없는-확장은-위험함">7.22.1 모니터링 없는 확장은 위험함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7221-모니터링-없는-확장은-위험함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>인스턴스 수가 자동으로 늘어난다고 해도 왜 늘어났는지 모르면 운영 품질을 개선할 수 없음.</p>
+<p>Auto Scaling만 보는 것이 아니라, 그 원인이 되는 메트릭과 로그를 함께 봐야 함.</p>
+<p>즉</p>
+<ul>
+<li>확장 자체</li>
+<li>확장의 원인</li>
+<li>확장의 결과</li>
+</ul>
+<p>를 함께 관찰해야 함.</p>
+<hr/>
+<h2 id="7222-health-check는-매우-중요함">7.22.2 Health Check는 매우 중요함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7222-health-check는-매우-중요함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Health Check가 부정확하면 장애 인스턴스에 요청을 보내거나, 반대로 정상 인스턴스를 제외할 수 있음.</p>
+<p>특히 ALB와 ASG가 함께 동작하는 구조에서는 Health Check가 전체 안정성에 큰 영향을 줌.</p>
+<hr/>
+<h2 id="7223-최소-인스턴스-수는-고가용성과-연결됨">7.22.3 최소 인스턴스 수는 고가용성과 연결됨<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7223-최소-인스턴스-수는-고가용성과-연결됨" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>예를 들어 최소 인스턴스 수를 1로 두면 Auto Scaling이 있어도 특정 순간에는 단일 서버 상태가 될 수 있음.</p>
+<p>운영 환경에서는 보통 최소 2대를 서로 다른 AZ에 두는 것이 바람직함.</p>
+<hr/>
+<h2 id="7224-확장-정책은-애플리케이션-특성에-맞아야-함">7.22.4 확장 정책은 애플리케이션 특성에 맞아야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7224-확장-정책은-애플리케이션-특성에-맞아야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CPU 기반 확장이 항상 정답은 아님.</p>
+<p>어떤 애플리케이션은 CPU보다 요청 수, 큐 길이, 응답 시간, 동시 접속 수가 더 적절한 기준일 수 있음.</p>
+<p>즉, 좋은 확장 정책은 <strong>서비스 병목 지점</strong>을 기준으로 잡아야 함.</p>
+<hr/>
+<h1 id="723-멀티-티어-아키텍처와의-연결">7.23 멀티 티어 아키텍처와의 연결<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#723-멀티-티어-아키텍처와의-연결" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이 장에서 다룬 내용을 3계층 구조에 연결하면 보통 다음과 같이 정리할 수 있음.</p>
+<pre><code>사용자
+  │
+ALB
+  │
+Auto Scaling Group의 Web/App EC2
+  │
+RDS / Redis / DynamoDB
+</code></pre>
+<p>이 구조에서</p>
+<ul>
+<li>CloudWatch는 전체 상태를 관찰하고</li>
+<li>ALB는 트래픽을 분산하며</li>
+<li>Auto Scaling은 서버 수를 자동 조절함</li>
+</ul>
+<p>즉, 이 장은 뒤에서 만들게 될 <strong>고가용성 멀티 티어 아키텍처의 핵심 운영 메커니즘</strong>을 설명하는 장이라고 볼 수 있음.</p>
+<hr/>
+<h1 id="724-핵심-비교-정리">7.24 핵심 비교 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#724-핵심-비교-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h2 id="cloudwatch">CloudWatch<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cloudwatch" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>관찰하고 측정하는 서비스</li>
+<li>메트릭, 로그, 알람 중심</li>
+<li>이상 감지와 운영 가시성을 제공함</li>
+</ul>
+<h2 id="elb">ELB<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#elb" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>요청을 여러 대상에 분산하는 서비스</li>
+<li>고가용성과 트래픽 분산의 핵심</li>
+<li>Health Check를 통해 비정상 대상 제외 가능</li>
+</ul>
+<h2 id="auto-scaling">Auto Scaling<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#auto-scaling" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>인스턴스 수를 자동 조정하는 서비스</li>
+<li>부하 대응과 비용 최적화에 핵심</li>
+<li>CloudWatch와 연계해 자동 반응 가능</li>
+</ul>
+<hr/>
+<h1 id="725-장-요약">7.25 장 요약<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#725-장-요약" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이번 장에서 학습한 핵심 내용</p>
+<ul>
+<li>단일 서버 구조의 한계</li>
+<li>CloudWatch의 역할과 구성요소</li>
+<li>메트릭, 로그, 알람의 차이</li>
+<li>ELB의 목적과 종류</li>
+<li>Target Group과 Health Check 개념</li>
+<li>Auto Scaling Group의 구조</li>
+<li>Launch Template과 Scaling Policy</li>
+<li>수평 확장과 수직 확장</li>
+<li>CloudWatch, ELB, Auto Scaling의 연계 구조</li>
+</ul>
+<hr/>
+<h1 id="726-한-줄-정리">7.26 한 줄 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#726-한-줄-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<pre><code>CloudWatch는 상태를 관찰한다.
+ELB는 요청을 분산한다.
+Auto Scaling은 인스턴스 수를 자동 조절한다.
+세 서비스를 함께 사용해야 가용성과 확장성이 살아난다.
+</code></pre></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-38" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#7장-aws-모니터링-및-크기-조정-아키텍처" data-for="7장-aws-모니터링-및-크기-조정-아키텍처">7장 AWS 모니터링 및 크기 조정 아키텍처</a></li><li class="depth-1"><a href="#cloudwatch-elastic-load-balancing-auto-scaling" data-for="cloudwatch-elastic-load-balancing-auto-scaling">CloudWatch, Elastic Load Balancing, Auto Scaling</a></li><li class="depth-0"><a href="#71-모니터링과-크기-조정의-필요성" data-for="71-모니터링과-크기-조정의-필요성">7.1 모니터링과 크기 조정의 필요성</a></li><li class="depth-0"><a href="#72-운영-환경에서-단일-서버의-한계" data-for="72-운영-환경에서-단일-서버의-한계">7.2 운영 환경에서 단일 서버의 한계</a></li><li class="depth-2"><a href="#1-단일-장애점spof" data-for="1-단일-장애점spof">1. 단일 장애점(SPOF)</a></li><li class="depth-2"><a href="#2-확장성-부족" data-for="2-확장성-부족">2. 확장성 부족</a></li><li class="depth-2"><a href="#3-유지보수-어려움" data-for="3-유지보수-어려움">3. 유지보수 어려움</a></li><li class="depth-2"><a href="#4-부하-집중" data-for="4-부하-집중">4. 부하 집중</a></li><li class="depth-0"><a href="#73-amazon-cloudwatch-개요" data-for="73-amazon-cloudwatch-개요">7.3 Amazon CloudWatch 개요</a></li><li class="depth-0"><a href="#74-cloudwatch-metrics" data-for="74-cloudwatch-metrics">7.4 CloudWatch Metrics</a></li><li class="depth-1"><a href="#741-메트릭의-의미" data-for="741-메트릭의-의미">7.4.1 메트릭의 의미</a></li><li class="depth-2"><a href="#cpuutilization" data-for="cpuutilization">CPUUtilization</a></li><li class="depth-2"><a href="#networkin--networkout" data-for="networkin--networkout">NetworkIn / NetworkOut</a></li><li class="depth-2"><a href="#status-check" data-for="status-check">Status Check</a></li><li class="depth-1"><a href="#742-기본-메트릭과-커스텀-메트릭" data-for="742-기본-메트릭과-커스텀-메트릭">7.4.2 기본 메트릭과 커스텀 메트릭</a></li><li class="depth-2"><a href="#기본-메트릭" data-for="기본-메트릭">기본 메트릭</a></li><li class="depth-2"><a href="#커스텀-메트릭" data-for="커스텀-메트릭">커스텀 메트릭</a></li><li class="depth-0"><a href="#75-cloudwatch-logs" data-for="75-cloudwatch-logs">7.5 CloudWatch Logs</a></li><li class="depth-1"><a href="#751-로그와-메트릭의-차이" data-for="751-로그와-메트릭의-차이">7.5.1 로그와 메트릭의 차이</a></li><li class="depth-1"><a href="#752-로그-그룹과-로그-스트림" data-for="752-로그-그룹과-로그-스트림">7.5.2 로그 그룹과 로그 스트림</a></li><li class="depth-0"><a href="#76-cloudwatch-alarm" data-for="76-cloudwatch-alarm">7.6 CloudWatch Alarm</a></li><li class="depth-1"><a href="#761-alarm의-구성-요소" data-for="761-alarm의-구성-요소">7.6.1 Alarm의 구성 요소</a></li><li class="depth-1"><a href="#762-alarm-상태" data-for="762-alarm-상태">7.6.2 Alarm 상태</a></li><li class="depth-2"><a href="#ok" data-for="ok">OK</a></li><li class="depth-2"><a href="#alarm" data-for="alarm">ALARM</a></li><li class="depth-2"><a href="#insufficient_data" data-for="insufficient_data">INSUFFICIENT_DATA</a></li><li class="depth-0"><a href="#77-cloudwatch-dashboard" data-for="77-cloudwatch-dashboard">7.7 CloudWatch Dashboard</a></li><li class="depth-0"><a href="#78-elastic-load-balancing-개요" data-for="78-elastic-load-balancing-개요">7.8 Elastic Load Balancing 개요</a></li><li class="depth-0"><a href="#79-로드-밸런서가-필요한-이유" data-for="79-로드-밸런서가-필요한-이유">7.9 로드 밸런서가 필요한 이유</a></li><li class="depth-0"><a href="#710-elb-종류" data-for="710-elb-종류">7.10 ELB 종류</a></li><li class="depth-1"><a href="#7101-alb" data-for="7101-alb">7.10.1 ALB</a></li><li class="depth-1"><a href="#7102-nlb" data-for="7102-nlb">7.10.2 NLB</a></li><li class="depth-1"><a href="#7103-gateway-load-balancer" data-for="7103-gateway-load-balancer">7.10.3 Gateway Load Balancer</a></li><li class="depth-0"><a href="#711-target-group" data-for="711-target-group">7.11 Target Group</a></li><li class="depth-0"><a href="#712-health-check" data-for="712-health-check">7.12 Health Check</a></li><li class="depth-1"><a href="#7121-health-check의-중요성" data-for="7121-health-check의-중요성">7.12.1 Health Check의 중요성</a></li><li class="depth-0"><a href="#713-고가용성과-로드-밸런서" data-for="713-고가용성과-로드-밸런서">7.13 고가용성과 로드 밸런서</a></li><li class="depth-0"><a href="#714-auto-scaling-개요" data-for="714-auto-scaling-개요">7.14 Auto Scaling 개요</a></li><li class="depth-0"><a href="#715-auto-scaling-group" data-for="715-auto-scaling-group">7.15 Auto Scaling Group</a></li><li class="depth-1"><a href="#7151-desired--min--max-capacity" data-for="7151-desired--min--max-capacity">7.15.1 Desired / Min / Max Capacity</a></li><li class="depth-2"><a href="#desired-capacity" data-for="desired-capacity">Desired Capacity</a></li><li class="depth-2"><a href="#minimum-capacity" data-for="minimum-capacity">Minimum Capacity</a></li><li class="depth-2"><a href="#maximum-capacity" data-for="maximum-capacity">Maximum Capacity</a></li><li class="depth-0"><a href="#716-launch-template" data-for="716-launch-template">7.16 Launch Template</a></li><li class="depth-0"><a href="#717-scaling-policy" data-for="717-scaling-policy">7.17 Scaling Policy</a></li><li class="depth-1"><a href="#7171-target-tracking-scaling" data-for="7171-target-tracking-scaling">7.17.1 Target Tracking Scaling</a></li><li class="depth-1"><a href="#7172-step-scaling" data-for="7172-step-scaling">7.17.2 Step Scaling</a></li><li class="depth-1"><a href="#7173-scheduled-scaling" data-for="7173-scheduled-scaling">7.17.3 Scheduled Scaling</a></li><li class="depth-0"><a href="#718-scale-out과-scale-in" data-for="718-scale-out과-scale-in">7.18 Scale Out과 Scale In</a></li><li class="depth-2"><a href="#scale-out" data-for="scale-out">Scale Out</a></li><li class="depth-2"><a href="#scale-in" data-for="scale-in">Scale In</a></li><li class="depth-0"><a href="#719-수평-확장과-수직-확장" data-for="719-수평-확장과-수직-확장">7.19 수평 확장과 수직 확장</a></li><li class="depth-2"><a href="#수직-확장scale-up" data-for="수직-확장scale-up">수직 확장(Scale Up)</a></li><li class="depth-2"><a href="#수평-확장scale-out" data-for="수평-확장scale-out">수평 확장(Scale Out)</a></li><li class="depth-0"><a href="#720-cloudwatch와-auto-scaling의-연계" data-for="720-cloudwatch와-auto-scaling의-연계">7.20 CloudWatch와 Auto Scaling의 연계</a></li><li class="depth-0"><a href="#721-elb와-auto-scaling의-연계" data-for="721-elb와-auto-scaling의-연계">7.21 ELB와 Auto Scaling의 연계</a></li><li class="depth-0"><a href="#722-운영-관점의-설계-포인트" data-for="722-운영-관점의-설계-포인트">7.22 운영 관점의 설계 포인트</a></li><li class="depth-1"><a href="#7221-모니터링-없는-확장은-위험함" data-for="7221-모니터링-없는-확장은-위험함">7.22.1 모니터링 없는 확장은 위험함</a></li><li class="depth-1"><a href="#7222-health-check는-매우-중요함" data-for="7222-health-check는-매우-중요함">7.22.2 Health Check는 매우 중요함</a></li><li class="depth-1"><a href="#7223-최소-인스턴스-수는-고가용성과-연결됨" data-for="7223-최소-인스턴스-수는-고가용성과-연결됨">7.22.3 최소 인스턴스 수는 고가용성과 연결됨</a></li><li class="depth-1"><a href="#7224-확장-정책은-애플리케이션-특성에-맞아야-함" data-for="7224-확장-정책은-애플리케이션-특성에-맞아야-함">7.22.4 확장 정책은 애플리케이션 특성에 맞아야 함</a></li><li class="depth-0"><a href="#723-멀티-티어-아키텍처와의-연결" data-for="723-멀티-티어-아키텍처와의-연결">7.23 멀티 티어 아키텍처와의 연결</a></li><li class="depth-0"><a href="#724-핵심-비교-정리" data-for="724-핵심-비교-정리">7.24 핵심 비교 정리</a></li><li class="depth-1"><a href="#cloudwatch" data-for="cloudwatch">CloudWatch</a></li><li class="depth-1"><a href="#elb" data-for="elb">ELB</a></li><li class="depth-1"><a href="#auto-scaling" data-for="auto-scaling">Auto Scaling</a></li><li class="depth-0"><a href="#725-장-요약" data-for="725-장-요약">7.25 장 요약</a></li><li class="depth-0"><a href="#726-한-줄-정리" data-for="726-한-줄-정리">7.26 한 줄 정리</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

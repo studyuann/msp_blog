@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>CloudFront + S3 정적 웹사이트 배포 실습</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="CloudFront + S3 정적 웹사이트 배포 실습"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="CloudFront + S3 정적 웹사이트 배포 실습"/><meta name="twitter:description" content="CloudFront + S3 정적 웹사이트 배포 실습 1. 실습 목표 이 실습에서는 S3에 정적 웹 콘텐츠를 업로드하고, CloudFront를 통해 사용자에게 콘텐츠를 배포하는 구조를 구성한다. 이 실습의 핵심 목표는 다음과 같다."/><meta property="og:description" content="CloudFront + S3 정적 웹사이트 배포 실습 1. 실습 목표 이 실습에서는 S3에 정적 웹 콘텐츠를 업로드하고, CloudFront를 통해 사용자에게 콘텐츠를 배포하는 구조를 구성한다. 이 실습의 핵심 목표는 다음과 같다."/><meta property="og:image:alt" content="CloudFront + S3 정적 웹사이트 배포 실습 1. 실습 목표 이 실습에서는 S3에 정적 웹 콘텐츠를 업로드하고, CloudFront를 통해 사용자에게 콘텐츠를 배포하는 구조를 구성한다. 이 실습의 핵심 목표는 다음과 같다."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/CloudFront-+-S3-정적-웹사이트-배포-실습"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/CloudFront-+-S3-정적-웹사이트-배포-실습"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="CloudFront + S3 정적 웹사이트 배포 실습 1. 실습 목표 이 실습에서는 S3에 정적 웹 콘텐츠를 업로드하고, CloudFront를 통해 사용자에게 콘텐츠를 배포하는 구조를 구성한다. 이 실습의 핵심 목표는 다음과 같다."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/CloudFront-+-S3-정적-웹사이트-배포-실습"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-75"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-75" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>CloudFront + S3 정적 웹사이트 배포 실습</a></div></nav><h1 class="article-title">CloudFront + S3 정적 웹사이트 배포 실습</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>16 min read</span></p></div></div><article class="popover-hint"><h1 id="cloudfront--s3-정적-웹사이트-배포-실습">CloudFront + S3 정적 웹사이트 배포 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#cloudfront--s3-정적-웹사이트-배포-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h1 id="1-실습-목표">1. 실습 목표<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-실습-목표" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이 실습에서는 S3에 정적 웹 콘텐츠를 업로드하고, CloudFront를 통해 사용자에게 콘텐츠를 배포하는 구조를 구성한다.</p>
+<p>이 실습의 핵심 목표는 다음과 같다.</p>
+<ul>
+<li>S3를 정적 콘텐츠 저장소로 사용</li>
+<li>CloudFront를 통해 전 세계 엣지 로케이션에서 콘텐츠 제공</li>
+<li>S3 버킷은 비공개로 유지</li>
+<li>CloudFront만 S3 버킷에 접근 가능하도록 OAC 구성</li>
+<li>HTTPS 기반으로 정적 사이트 제공</li>
+<li>S3 website endpoint 방식과 OAC 방식의 차이 이해</li>
+</ul>
+<p>정적 사이트를 안전하게 운영하는 관점에서 보면, <strong>일반 S3 오리진 + OAC</strong> 방식이 보안상 더 적절하다.</p>
+<hr/>
+<h1 id="2-전체-아키텍처">2. 전체 아키텍처<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-전체-아키텍처" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이번 실습에서 구성할 아키텍처는 다음과 같다.</p>
+<pre><code>사용자
+  │
+  │ HTTPS 요청
+  ▼
+CloudFront
+  │
+  │ OAC
+  ▼
+Private S3 Bucket
+</code></pre>
+<p>이 구조에서 중요한 점은 다음과 같다.</p>
+<ul>
+<li>사용자는 CloudFront 도메인으로 접속</li>
+<li>CloudFront가 S3 버킷에서 객체를 가져옴</li>
+<li>S3 버킷은 외부에 직접 공개하지 않음</li>
+<li>CloudFront만 버킷 접근 가능</li>
+</ul>
+<p>이 구조는 정적 파일을 공개 서비스로 제공하되, <strong>오리진 저장소 자체는 비공개로 보호</strong>하는 형태다.</p>
+<hr/>
+<h1 id="3-먼저-구분해야-하는-두-가지-방식">3. 먼저 구분해야 하는 두 가지 방식<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-먼저-구분해야-하는-두-가지-방식" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront와 S3를 함께 사용할 때는 아래 두 가지 구성을 구분해야 한다.</p>
+<h2 id="31-방식-a-s3-website-endpoint-사용">3.1 방식 A: S3 website endpoint 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#31-방식-a-s3-website-endpoint-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>이 방식은 S3의 <strong>Static Website Hosting</strong> 기능을 켜고, 생성된 <strong>website endpoint</strong>를 CloudFront 오리진으로 연결하는 구성이다.</p>
+<p>예</p>
+<pre><code>bucket-name.s3-website-ap-northeast-2.amazonaws.com
+</code></pre>
+<p>이 방식의 특징은 다음과 같다.</p>
+<ul>
+<li>S3 website endpoint 사용</li>
+<li>CloudFront에서는 custom origin으로 동작</li>
+<li>오리진 연결은 HTTP only</li>
+<li>OAC 사용 불가</li>
+<li>공개 읽기 가능한 객체 구성이 필요</li>
+</ul>
+<p><strong>website endpoint는 HTTPS를 지원하지 않으며</strong>, 이 엔드포인트를 CloudFront 오리진으로 사용할 경우 <strong>custom origin</strong>이 되어 <strong>OAC 또는 OAI를 사용할 수 없다</strong>. 또한 website endpoint는 <strong>공개적으로 읽을 수 있는 콘텐츠만 지원</strong>한다.</p>
+<h2 id="32-방식-b-일반-s3-버킷-오리진--oac-사용">3.2 방식 B: 일반 S3 버킷 오리진 + OAC 사용<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#32-방식-b-일반-s3-버킷-오리진--oac-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>이 방식은 S3의 website endpoint가 아니라, <strong>일반 S3 버킷 자체</strong>를 CloudFront 오리진으로 사용하는 구성이다.</p>
+<p>예</p>
+<pre><code>bucket-name.s3.ap-northeast-2.amazonaws.com
+</code></pre>
+<p>이 방식의 특징은 다음과 같다.</p>
+<ul>
+<li>일반 S3 bucket origin 사용</li>
+<li>OAC 적용 가능</li>
+<li>버킷 비공개 유지 가능</li>
+<li>CloudFront를 통해서만 접근 가능</li>
+<li>현재 보안상 권장되는 방식</li>
+</ul>
+<hr/>
+<h1 id="4-일반-s3-버킷-오리진--oac-사용">4. <strong>일반 S3 버킷 오리진 + OAC 사용</strong><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-일반-s3-버킷-오리진--oac-사용" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이 방식을 선택하는 이유는 다음과 같다.</p>
+<ul>
+<li>S3 버킷을 공개하지 않아도 됨</li>
+<li>CloudFront만 오리진 접근 가능</li>
+<li>HTTPS 배포 구조를 자연스럽게 구성 가능</li>
+<li>실무 운영에 더 적합함</li>
+</ul>
+<p>**“정적 파일은 공개 서비스지만, S3 버킷 자체는 공개하지 않는다”**는 점이 핵심이다.</p>
+<hr/>
+<h1 id="5-실습-준비">5. 실습 준비<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#5-실습-준비" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 전에 아래 항목을 준비한다.</p>
+<ul>
+<li>AWS 계정</li>
+<li>정적 웹 파일
+<ul>
+<li><code>index.html</code></li>
+<li>필요 시 <code>style.css</code>, <code>app.js</code>, 이미지 파일</li>
+</ul>
+</li>
+<li>S3 버킷 생성 권한</li>
+<li>CloudFront 배포 생성 권한</li>
+</ul>
+<p>실습에 사용할 기본 파일 예시는 다음과 같다.</p>
+<h2 id="indexhtml">index.html<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#indexhtml" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="html" data-theme="github-light github-dark"><code data-language="html" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;!</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">DOCTYPE</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> html</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">html</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> lang</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;ko&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">head</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  &lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">meta</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> charset</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;UTF-8&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  &lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">meta</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> name</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;viewport&quot;</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;"> content</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;width=device-width, initial-scale=1.0&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  &lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">title</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">>CloudFront + S3 Test&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">title</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">head</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">body</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  &lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">h1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">>Hello CloudFront + S3&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">h1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  &lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">p</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">>정적 웹사이트 배포 테스트 페이지&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">p</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">body</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">html</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span></code></pre></figure>
+<p>이 파일은 브라우저에서 정적 페이지가 정상적으로 출력되는지 확인하는 가장 단순한 테스트용 파일이다.</p>
+<hr/>
+<h1 id="6-step-1-s3-버킷-생성">6. Step 1. S3 버킷 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#6-step-1-s3-버킷-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS 콘솔에서 S3 버킷을 생성한다.</p>
+<p>경로</p>
+<pre><code>S3 → Create bucket
+</code></pre>
+<p>예시 설정</p>
+<pre><code>Bucket name
+이니셜-cf-static-site-001
+
+Region
+ap-northeast-2
+</code></pre>
+<p>이 실습에서는 S3를 <strong>CloudFront의 오리진 저장소</strong>로 사용할 것이므로, 버킷 이름은 전역적으로 고유해야 한다.</p>
+<h2 id="주의사항">주의사항<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#주의사항" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>이번 방식에서는 S3 Static Website Hosting을 반드시 활성화하지 않아도 된다.</p>
+<p>오히려 핵심은 <strong>일반 S3 오리진</strong>으로 사용하는 것이다.</p>
+<p>즉 이 단계에서는 단순히 정적 파일을 저장할 S3 버킷을 만든다고 이해하면 된다.</p>
+<hr/>
+<h1 id="7-step-2-퍼블릭-액세스-차단-유지">7. Step 2. 퍼블릭 액세스 차단 유지<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#7-step-2-퍼블릭-액세스-차단-유지" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>버킷 생성 시 또는 생성 후 <strong>퍼블릭 액세스 차단(Block Public Access)</strong> 은 유지한다.</p>
+<p>확인 항목</p>
+<pre><code>Block all public access
+체크 유지
+</code></pre>
+<p>즉 다음 네 가지도 함께 차단 상태로 유지한다.</p>
+<ul>
+<li>Block public ACLs</li>
+<li>Ignore public ACLs</li>
+<li>Block public bucket policies</li>
+<li>Restrict public bucket policies</li>
+</ul>
+<p>이번 실습의 핵심은 <strong>S3를 직접 공개하지 않는 것</strong>이다. S3 website hosting 문서에서는 website endpoint 방식으로 공개 사이트를 만들려면 퍼블릭 읽기 구성이 필요하지만, OAC 방식은 그와 다르게 버킷을 비공개로 유지할 수 있다. (<a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/HostingWebsiteOnS3Setup.html?utm_source=chatgpt.com" class="external">AWS Docs<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a>)</p>
+<hr/>
+<h1 id="8-step-3-정적-파일-업로드">8. Step 3. 정적 파일 업로드<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#8-step-3-정적-파일-업로드" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>생성한 버킷에 <code>index.html</code> 파일을 업로드한다.</p>
+<p>경로</p>
+<pre><code>S3 → 대상 버킷 선택 → Upload
+</code></pre>
+<p>업로드 후 버킷 내부에 최소한 다음 파일이 있어야 한다.</p>
+<pre><code>index.html
+</code></pre>
+<p>이 시점에서는 S3 URL로 직접 열리지 않아도 정상이다.</p>
+<p>왜냐하면 버킷은 아직 비공개 상태이기 때문이다.</p>
+<p>즉 지금은 저장소만 준비한 단계다.</p>
+<hr/>
+<h1 id="9-step-4-cloudfront-배포-생성">9. Step 4. CloudFront 배포 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#9-step-4-cloudfront-배포-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이제 CloudFront 배포를 생성한다.</p>
+<p>경로</p>
+<pre><code>CloudFront → Create distribution
+</code></pre>
+<h2 id="91-origin-domain-선택">9.1 Origin domain 선택<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#91-origin-domain-선택" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>여기서 가장 중요하다.</p>
+<p><strong>S3 website endpoint를 선택하는 것이 아니라 일반 S3 bucket origin을 선택해야 한다.</strong></p>
+<p>예시</p>
+<pre><code>Origin domain
+이니셜-cf-static-site-001.s3.ap-northeast-2.amazonaws.com
+</code></pre>
+<p>만약 <code>s3-website-...amazonaws.com</code> 형태를 선택하면 이번 실습 구조와 달라진다.</p>
+<h2 id="92-origin-access-설정">9.2 Origin access 설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#92-origin-access-설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>설정값</p>
+<pre><code>Origin access
+Origin access control settings (recommended)
+</code></pre>
+<p>새 OAC를 생성하거나 기존 OAC를 선택한다.</p>
+<p>이 설정이 바로 CloudFront만 S3 오리진에 접근할 수 있도록 제한하는 핵심이다. AWS CloudFront 시작 가이드에서도 S3 origin에 대해 OAC를 사용하는 배포 생성 절차를 제공한다. (<a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/GettingStarted.SimpleDistribution.html?utm_source=chatgpt.com" class="external">AWS Docs<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a>)</p>
+<h2 id="93-viewer-protocol-policy-설정">9.3 Viewer protocol policy 설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#93-viewer-protocol-policy-설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>설정값</p>
+<pre><code>Viewer protocol policy
+Redirect HTTP to HTTPS
+</code></pre>
+<p>또는</p>
+<pre><code>HTTPS only
+</code></pre>
+<p>정적 사이트를 배포할 때는 일반적으로 HTTPS 사용을 강제하는 것이 좋다. CloudFront 문서에서도 Viewer Protocol Policy를 통해 HTTPS 강제를 설정할 수 있다고 설명한다. (<a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-s3-origin.html?utm_source=chatgpt.com" class="external">AWS Docs<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a>)</p>
+<h2 id="94-default-root-object-설정">9.4 Default root object 설정<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#94-default-root-object-설정" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>설정값</p>
+<pre><code>Default root object
+index.html
+</code></pre>
+<p>이 값을 설정하면 CloudFront 도메인 루트(<code>/</code>) 접속 시 <code>index.html</code> 을 기본 문서로 반환한다.</p>
+<p>예를 들어 사용자가 다음 주소로 접속했을 때</p>
+<pre><code>https://배포도메인/
+</code></pre>
+<p>실제로는 <code>index.html</code> 이 응답된다.</p>
+<h2 id="95-cache-settings">9.5 Cache settings<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#95-cache-settings" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>일반적인 정적 파일 배포 실습이라면 기본 권장 캐시 정책을 사용하면 충분하다.</p>
+<p>예</p>
+<pre><code>Use a recommended cache policy
+</code></pre>
+<p>정적 콘텐츠는 변경 빈도가 낮고 캐시 효율이 높기 때문에 기본 권장 정책으로 시작해도 무리가 없다.</p>
+<hr/>
+<h1 id="10-step-5-버킷-정책-반영">10. Step 5. 버킷 정책 반영<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#10-step-5-버킷-정책-반영" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CloudFront에서 OAC를 사용하면 콘솔이 자동으로 버킷 정책 적용을 제안하는 경우가 많다.</p>
+<p>자동 적용이 되지 않았다면 수동으로 추가한다.</p>
+<p>예시 정책은 다음과 같다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">{</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Version&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;2012-10-17&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  &quot;Statement&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: [</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">    {</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Sid&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;AllowCloudFrontServicePrincipalReadOnly&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Effect&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;Allow&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Principal&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: {</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">        &quot;Service&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;cloudfront.amazonaws.com&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">      },</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Action&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;s3:GetObject&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Resource&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;arn:aws:s3:::이니셜-cf-static-site-001/*&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">      &quot;Condition&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: {</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">        &quot;StringEquals&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: {</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">          &quot;AWS:SourceArn&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;arn:aws:cloudfront::123456789012:distribution/배포ID&quot;</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">        }</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">      }</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">    }</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">  ]</span></span>
+<span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">}</span></span></code></pre></figure>
+<h2 id="정책-설명">정책 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#정책-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<h3 id="principal"><code>Principal</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#principal" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>CloudFront 서비스 자체를 의미한다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;Service&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;cloudfront.amazonaws.com&quot;</span></span></code></pre></figure>
+<p>즉 모든 사용자가 아니라 CloudFront 서비스만 이 버킷에 접근 가능하게 하는 것이다.</p>
+<h3 id="action"><code>Action</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#action" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>허용할 작업은 <code>s3:GetObject</code> 이다.</p>
+<p>즉 객체 읽기만 허용한다.</p>
+<h3 id="resource"><code>Resource</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#resource" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>버킷 내부 모든 객체를 의미한다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">arn:aws:s</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">3</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">:::버킷이름</span><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;">/*</span></span></code></pre></figure>
+<h3 id="condition"><code>Condition</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#condition" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>특정 CloudFront 배포에서 오는 요청만 허용하기 위한 조건이다.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="json" data-theme="github-light github-dark"><code data-language="json" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;AWS:SourceArn&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;arn:aws:cloudfront::계정ID:distribution/배포ID&quot;</span></span></code></pre></figure>
+<p>이 조건 덕분에 다른 CloudFront 배포나 다른 주체는 접근할 수 없다.</p>
+<p>AWS OAC 문서의 예시도 같은 방식으로 <strong>CloudFront 서비스 프린시펄 + SourceArn 조건</strong>을 사용한다. (<a href="https://docs.aws.amazon.com/ko_kr/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html?utm_source=chatgpt.com" class="external">AWS Docs<svg aria-hidden="true" class="external-icon" style="max-width:0.8em;max-height:0.8em;" viewBox="0 0 512 512"><path d="M320 0H288V64h32 82.7L201.4 265.4 178.7 288 224 333.3l22.6-22.6L448 109.3V192v32h64V192 32 0H480 320zM32 32H0V64 480v32H32 456h32V480 352 320H424v32 96H64V96h96 32V32H160 32z"></path></svg></a>)</p>
+<hr/>
+<h1 id="11-step-6-cloudfront-배포-완료-후-테스트">11. Step 6. CloudFront 배포 완료 후 테스트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#11-step-6-cloudfront-배포-완료-후-테스트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>배포 생성 후 CloudFront가 배포를 완료하면 도메인 이름이 발급된다.</p>
+<p>예</p>
+<pre><code>d123exampleabcd.cloudfront.net
+</code></pre>
+<p>브라우저에서 다음 주소로 접속한다.</p>
+<pre><code>https://d123exampleabcd.cloudfront.net
+</code></pre>
+<p>정상이라면 <code>index.html</code> 내용이 표시된다.</p>
+<h2 id="확인-포인트">확인 포인트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#확인-포인트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>S3 객체는 비공개 상태</li>
+<li>CloudFront 주소로는 정상 접속</li>
+<li>사용자는 HTTPS로 접속</li>
+<li>실제 오리진 저장소는 CloudFront만 접근 가능</li>
+</ul>
+<p>이 구조가 이번 실습의 핵심 결과다.</p>
+<hr/>
+<h1 id="12-step-7-직접-s3-접근-차단-확인">12. Step 7. 직접 S3 접근 차단 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#12-step-7-직접-s3-접근-차단-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이제 CloudFront를 거치지 않고 직접 S3에 접근이 되는지 확인한다.</p>
+<p>예를 들어 S3 객체 URL을 직접 열어본다.</p>
+<pre><code>https://이니셜-cf-static-site-001.s3.ap-northeast-2.amazonaws.com/index.html
+</code></pre>
+<p>또는 브라우저/CLI에서 직접 접근을 시도해본다.</p>
+<p>정상적인 OAC 구성이라면 <strong>직접 접근은 실패하거나 AccessDenied가 나와야 한다.</strong></p>
+<p>이 테스트를 통해 다음을 확인할 수 있다.</p>
+<ul>
+<li>버킷이 공개되지 않았음</li>
+<li>CloudFront만 오리진 접근 가능함</li>
+<li>CloudFront가 보안 경계 역할을 수행함</li>
+</ul>
+<hr/>
+<h1 id="13-step-8-파일-변경-후-캐시-동작-확인">13. Step 8. 파일 변경 후 캐시 동작 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#13-step-8-파일-변경-후-캐시-동작-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>정적 웹사이트에서는 캐시 동작도 함께 이해하는 것이 좋다.</p>
+<p>예를 들어 <code>index.html</code> 의 내용을 수정해 다시 업로드한다.</p>
+<p>수정 예시</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="html" data-theme="github-light github-dark"><code data-language="html" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">h1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">>Hello CloudFront + S3 - Version 2&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D;">h1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">></span></span></code></pre></figure>
+<p>업로드 후 즉시 CloudFront URL로 접속했는데 이전 페이지가 보일 수 있다.</p>
+<p>이유는 CloudFront 엣지에 기존 객체가 캐시되어 있을 수 있기 때문이다.</p>
+<p>이 경우 두 가지 방법이 있다.</p>
+<h2 id="방법-1-캐시-만료-대기">방법 1. 캐시 만료 대기<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#방법-1-캐시-만료-대기" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>캐시 정책 TTL에 따라 일정 시간이 지나면 새 객체가 반영된다.</p>
+<h2 id="방법-2-invalidation-실행">방법 2. Invalidation 실행<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#방법-2-invalidation-실행" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CloudFront에서 캐시 무효화를 수행한다.</p>
+<p>경로</p>
+<pre><code>CloudFront → Distribution → Invalidations → Create invalidation
+</code></pre>
+<p>입력값</p>
+<pre><code>/*
+</code></pre>
+<p>또는 특정 파일만 지정</p>
+<pre><code>/index.html
+</code></pre>
+<p>이 작업은 캐시된 객체를 강제로 무효화해서 새 콘텐츠를 더 빨리 반영하는 데 사용한다.</p>
+<hr/>
+<h1 id="14-자주-발생하는-문제">14. 자주 발생하는 문제<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#14-자주-발생하는-문제" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<h1 id="141-access-denied-발생">14.1 Access Denied 발생<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#141-access-denied-발생" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>원인 후보는 다음과 같다.</p>
+<ul>
+<li>버킷 정책이 누락됨</li>
+<li>SourceArn이 잘못됨</li>
+<li>CloudFront OAC가 제대로 연결되지 않음</li>
+<li>오리진을 website endpoint로 잘못 선택함</li>
+</ul>
+<p>특히 가장 많이 하는 실수는 다음이다.</p>
+<ul>
+<li>CloudFront 오리진을 <code>s3-website-...</code> 로 선택함</li>
+<li>그런데 OAC를 적용하려고 함</li>
+</ul>
+<p>이 조합은 맞지 않는다.</p>
+<h1 id="142-https는-되는데-파일이-안-보임">14.2 HTTPS는 되는데 파일이 안 보임<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#142-https는-되는데-파일이-안-보임" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>확인 항목</p>
+<ul>
+<li>Default root object가 <code>index.html</code> 로 설정되어 있는지</li>
+<li>실제 버킷에 <code>index.html</code> 이 업로드되어 있는지</li>
+<li>대소문자가 일치하는지</li>
+</ul>
+<h1 id="143-콘텐츠-수정-후-반영이-늦음">14.3 콘텐츠 수정 후 반영이 늦음<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#143-콘텐츠-수정-후-반영이-늦음" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>원인</p>
+<ul>
+<li>CloudFront 캐시 유지 중</li>
+</ul>
+<p>해결</p>
+<ul>
+<li>Invalidation 수행</li>
+<li>객체 버전 관리 방식 사용
+<ul>
+<li>예: <code>app.v2.js</code></li>
+</ul>
+</li>
+</ul>
+<hr/>
+<h1 id="15-비교용-website-endpoint-방식은-어떻게-다른가">15. 비교용: website endpoint 방식은 어떻게 다른가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#15-비교용-website-endpoint-방식은-어떻게-다른가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이번 실습은 OAC 방식이지만, 비교를 위해 website endpoint 방식도 정리해둘 필요가 있다.</p>
+<h2 id="151-website-endpoint-방식의-특징">15.1 website endpoint 방식의 특징<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#151-website-endpoint-방식의-특징" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>S3 Static Website Hosting 사용</li>
+<li>S3 website endpoint 사용</li>
+<li>오리진은 custom origin</li>
+<li>HTTP only</li>
+<li>OAC 불가</li>
+<li>공개 읽기 정책 필요</li>
+</ul>
+<h2 id="152-언제-사용할-수-있는가">15.2 언제 사용할 수 있는가<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#152-언제-사용할-수-있는가" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>다음과 같은 경우에만 제한적으로 사용할 수 있다.</p>
+<ul>
+<li>공개용 정적 사이트</li>
+<li>보안보다 간단한 웹 호스팅 동작이 우선인 경우</li>
+<li>S3의 website redirect 기능이 꼭 필요한 경우</li>
+<li>index / error document 기능을 S3 website hosting 자체에 의존하는 경우</li>
+</ul>
+<hr/>
+<h1 id="16-최종-정리">16. 최종 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#16-최종-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>이번 실습에서 기억해야 할 핵심은 다음과 같다.</p>
+<ul>
+<li>CloudFront + S3 정적 배포에는 두 가지 방식이 있음</li>
+<li><strong>S3 website endpoint 방식</strong>
+<ul>
+<li>공개 읽기 필요</li>
+<li>HTTP only</li>
+<li>OAC 불가</li>
+</ul>
+</li>
+<li><strong>일반 S3 origin + OAC 방식</strong>
+<ul>
+<li>S3 비공개 유지 가능</li>
+<li>CloudFront만 오리진 접근 가능</li>
+<li>실무 권장 방식</li>
+</ul>
+</li>
+</ul>
+<p>즉 정적 웹사이트를 안전하게 배포하려면</p>
+<p><strong>S3는 비공개로 두고, CloudFront에 OAC를 적용해 배포하는 방식</strong>으로 이해하면 된다.</p>
+<hr/>
+<h1 id="17-실습-체크리스트">17. 실습 체크리스트<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#17-실습-체크리스트" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 완료 후 아래 항목을 확인한다.</p>
+<ul>
+<li>S3 버킷 생성 완료</li>
+<li>퍼블릭 액세스 차단 유지</li>
+<li><code>index.html</code> 업로드 완료</li>
+<li>CloudFront 배포 생성 완료</li>
+<li>일반 S3 오리진 선택 완료</li>
+<li>OAC 적용 완료</li>
+<li>버킷 정책 반영 완료</li>
+<li>CloudFront 도메인으로 HTTPS 접속 성공</li>
+<li>직접 S3 접근 차단 확인 완료</li>
+<li>파일 수정 후 Invalidation 동작 확인 완료</li>
+</ul>
+<hr/></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-70" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#cloudfront--s3-정적-웹사이트-배포-실습" data-for="cloudfront--s3-정적-웹사이트-배포-실습">CloudFront + S3 정적 웹사이트 배포 실습</a></li><li class="depth-0"><a href="#1-실습-목표" data-for="1-실습-목표">1. 실습 목표</a></li><li class="depth-0"><a href="#2-전체-아키텍처" data-for="2-전체-아키텍처">2. 전체 아키텍처</a></li><li class="depth-0"><a href="#3-먼저-구분해야-하는-두-가지-방식" data-for="3-먼저-구분해야-하는-두-가지-방식">3. 먼저 구분해야 하는 두 가지 방식</a></li><li class="depth-1"><a href="#31-방식-a-s3-website-endpoint-사용" data-for="31-방식-a-s3-website-endpoint-사용">3.1 방식 A: S3 website endpoint 사용</a></li><li class="depth-1"><a href="#32-방식-b-일반-s3-버킷-오리진--oac-사용" data-for="32-방식-b-일반-s3-버킷-오리진--oac-사용">3.2 방식 B: 일반 S3 버킷 오리진 + OAC 사용</a></li><li class="depth-0"><a href="#4-일반-s3-버킷-오리진--oac-사용" data-for="4-일반-s3-버킷-오리진--oac-사용">4. 일반 S3 버킷 오리진 + OAC 사용</a></li><li class="depth-0"><a href="#5-실습-준비" data-for="5-실습-준비">5. 실습 준비</a></li><li class="depth-1"><a href="#indexhtml" data-for="indexhtml">index.html</a></li><li class="depth-0"><a href="#6-step-1-s3-버킷-생성" data-for="6-step-1-s3-버킷-생성">6. Step 1. S3 버킷 생성</a></li><li class="depth-1"><a href="#주의사항" data-for="주의사항">주의사항</a></li><li class="depth-0"><a href="#7-step-2-퍼블릭-액세스-차단-유지" data-for="7-step-2-퍼블릭-액세스-차단-유지">7. Step 2. 퍼블릭 액세스 차단 유지</a></li><li class="depth-0"><a href="#8-step-3-정적-파일-업로드" data-for="8-step-3-정적-파일-업로드">8. Step 3. 정적 파일 업로드</a></li><li class="depth-0"><a href="#9-step-4-cloudfront-배포-생성" data-for="9-step-4-cloudfront-배포-생성">9. Step 4. CloudFront 배포 생성</a></li><li class="depth-1"><a href="#91-origin-domain-선택" data-for="91-origin-domain-선택">9.1 Origin domain 선택</a></li><li class="depth-1"><a href="#92-origin-access-설정" data-for="92-origin-access-설정">9.2 Origin access 설정</a></li><li class="depth-1"><a href="#93-viewer-protocol-policy-설정" data-for="93-viewer-protocol-policy-설정">9.3 Viewer protocol policy 설정</a></li><li class="depth-1"><a href="#94-default-root-object-설정" data-for="94-default-root-object-설정">9.4 Default root object 설정</a></li><li class="depth-1"><a href="#95-cache-settings" data-for="95-cache-settings">9.5 Cache settings</a></li><li class="depth-0"><a href="#10-step-5-버킷-정책-반영" data-for="10-step-5-버킷-정책-반영">10. Step 5. 버킷 정책 반영</a></li><li class="depth-1"><a href="#정책-설명" data-for="정책-설명">정책 설명</a></li><li class="depth-2"><a href="#principal" data-for="principal">Principal</a></li><li class="depth-2"><a href="#action" data-for="action">Action</a></li><li class="depth-2"><a href="#resource" data-for="resource">Resource</a></li><li class="depth-2"><a href="#condition" data-for="condition">Condition</a></li><li class="depth-0"><a href="#11-step-6-cloudfront-배포-완료-후-테스트" data-for="11-step-6-cloudfront-배포-완료-후-테스트">11. Step 6. CloudFront 배포 완료 후 테스트</a></li><li class="depth-1"><a href="#확인-포인트" data-for="확인-포인트">확인 포인트</a></li><li class="depth-0"><a href="#12-step-7-직접-s3-접근-차단-확인" data-for="12-step-7-직접-s3-접근-차단-확인">12. Step 7. 직접 S3 접근 차단 확인</a></li><li class="depth-0"><a href="#13-step-8-파일-변경-후-캐시-동작-확인" data-for="13-step-8-파일-변경-후-캐시-동작-확인">13. Step 8. 파일 변경 후 캐시 동작 확인</a></li><li class="depth-1"><a href="#방법-1-캐시-만료-대기" data-for="방법-1-캐시-만료-대기">방법 1. 캐시 만료 대기</a></li><li class="depth-1"><a href="#방법-2-invalidation-실행" data-for="방법-2-invalidation-실행">방법 2. Invalidation 실행</a></li><li class="depth-0"><a href="#14-자주-발생하는-문제" data-for="14-자주-발생하는-문제">14. 자주 발생하는 문제</a></li><li class="depth-0"><a href="#141-access-denied-발생" data-for="141-access-denied-발생">14.1 Access Denied 발생</a></li><li class="depth-0"><a href="#142-https는-되는데-파일이-안-보임" data-for="142-https는-되는데-파일이-안-보임">14.2 HTTPS는 되는데 파일이 안 보임</a></li><li class="depth-0"><a href="#143-콘텐츠-수정-후-반영이-늦음" data-for="143-콘텐츠-수정-후-반영이-늦음">14.3 콘텐츠 수정 후 반영이 늦음</a></li><li class="depth-0"><a href="#15-비교용-website-endpoint-방식은-어떻게-다른가" data-for="15-비교용-website-endpoint-방식은-어떻게-다른가">15. 비교용: website endpoint 방식은 어떻게 다른가</a></li><li class="depth-1"><a href="#151-website-endpoint-방식의-특징" data-for="151-website-endpoint-방식의-특징">15.1 website endpoint 방식의 특징</a></li><li class="depth-1"><a href="#152-언제-사용할-수-있는가" data-for="152-언제-사용할-수-있는가">15.2 언제 사용할 수 있는가</a></li><li class="depth-0"><a href="#16-최종-정리" data-for="16-최종-정리">16. 최종 정리</a></li><li class="depth-0"><a href="#17-실습-체크리스트" data-for="17-실습-체크리스트">17. 실습 체크리스트</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>

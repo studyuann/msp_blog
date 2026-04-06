@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr"><head><title>4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)</title><meta charset="utf-8"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted Grotesk:wght@400;700&amp;family=Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600&amp;family=IBM Plex Mono:wght@400;600&amp;display=swap"/><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="og:site_name" content="yuann의 기술 블로그"/><meta property="og:title" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)"/><meta name="twitter:description" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션) 4.1 컴퓨팅 서비스 개요 AWS에서 컴퓨팅 서비스는 애플리케이션을 실제로 실행하는 역할을 담당함."/><meta property="og:description" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션) 4.1 컴퓨팅 서비스 개요 AWS에서 컴퓨팅 서비스는 애플리케이션을 실제로 실행하는 역할을 담당함."/><meta property="og:image:alt" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션) 4.1 컴퓨팅 서비스 개요 AWS에서 컴퓨팅 서비스는 애플리케이션을 실제로 실행하는 역할을 담당함."/><meta property="og:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:url" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta name="twitter:image" content="https://studyuann.github.io/msp_blog/static/og-image.png"/><meta property="og:image:type" content="image/.png"/><meta property="twitter:domain" content="studyuann.github.io/msp_blog"/><meta property="og:url" content="https://studyuann.github.io/msp_blog/mgz/4장-AWS-컴퓨팅-아키텍처-(EC2,-인스턴스-스토리지,-요금-옵션)"/><meta property="twitter:url" content="https://studyuann.github.io/msp_blog/mgz/4장-AWS-컴퓨팅-아키텍처-(EC2,-인스턴스-스토리지,-요금-옵션)"/><link rel="icon" href="../static/icon.png"/><meta name="description" content="4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션) 4.1 컴퓨팅 서비스 개요 AWS에서 컴퓨팅 서비스는 애플리케이션을 실제로 실행하는 역할을 담당함."/><meta name="generator" content="Quartz"/><link href="../index.css" rel="stylesheet" type="text/css" data-persist="true"/><style>.expand-button {
+  position: absolute;
+  display: flex;
+  float: right;
+  padding: 0.4rem;
+  margin: 0.3rem;
+  right: 0;
+  color: var(--gray);
+  border-color: var(--dark);
+  background-color: var(--light);
+  border: 1px solid;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.2s;
+}
+.expand-button > svg {
+  fill: var(--light);
+  filter: contrast(0.3);
+}
+.expand-button:hover {
+  cursor: pointer;
+  border-color: var(--secondary);
+}
+.expand-button:focus {
+  outline: 0;
+}
+
+pre:hover > .expand-button {
+  opacity: 1;
+  transition: 0.2s;
+}
+
+#mermaid-container {
+  position: fixed;
+  contain: layout;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+}
+#mermaid-container.active {
+  display: inline-block;
+}
+#mermaid-container > #mermaid-space {
+  border: 1px solid var(--lightgray);
+  background-color: var(--light);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 80vh;
+  width: 80vw;
+  overflow: hidden;
+}
+#mermaid-container > #mermaid-space > .mermaid-content {
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.1s ease;
+  overflow: visible;
+  min-height: 200px;
+  min-width: 200px;
+}
+#mermaid-container > #mermaid-space > .mermaid-content pre {
+  margin: 0;
+  border: none;
+}
+#mermaid-container > #mermaid-space > .mermaid-content svg {
+  max-width: none;
+  height: auto;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--bodyFont);
+  transition: all 0.2s ease;
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:hover {
+  background: var(--lightgray);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:active {
+  transform: translateY(1px);
+}
+#mermaid-container > #mermaid-space > .mermaid-controls .mermaid-control-button:nth-child(2) {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+}
+/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VSb290IjoiQzpcXFVzZXJzXFxBTk5cXHF1YXJ0elxccXVhcnR6XFxjb21wb25lbnRzXFxzdHlsZXMiLCJzb3VyY2VzIjpbIm1lcm1haWQuaW5saW5lLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUdGO0VBQ0U7OztBQUtGO0VBQ0U7RUFDQTs7O0FBSUo7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBOztBQUVBO0VBQ0U7O0FBR0Y7RUFDRTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7O0FBR0Y7RUFDRTtFQUNBOztBQUlKO0VBQ0U7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7QUFFQTtFQUNFO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7O0FBRUE7RUFDRTs7QUFHRjtFQUNFOztBQUlGO0VBQ0U7RUFDQTtFQUNBIiwic291cmNlc0NvbnRlbnQiOlsiLmV4cGFuZC1idXR0b24ge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGRpc3BsYXk6IGZsZXg7XG4gIGZsb2F0OiByaWdodDtcbiAgcGFkZGluZzogMC40cmVtO1xuICBtYXJnaW46IDAuM3JlbTtcbiAgcmlnaHQ6IDA7IC8vIE5PVEU6IHJpZ2h0IHdpbGwgYmUgc2V0IGluIG1lcm1haWQuaW5saW5lLnRzXG4gIGNvbG9yOiB2YXIoLS1ncmF5KTtcbiAgYm9yZGVyLWNvbG9yOiB2YXIoLS1kYXJrKTtcbiAgYmFja2dyb3VuZC1jb2xvcjogdmFyKC0tbGlnaHQpO1xuICBib3JkZXI6IDFweCBzb2xpZDtcbiAgYm9yZGVyLXJhZGl1czogNXB4O1xuICBvcGFjaXR5OiAwO1xuICB0cmFuc2l0aW9uOiAwLjJzO1xuXG4gICYgPiBzdmcge1xuICAgIGZpbGw6IHZhcigtLWxpZ2h0KTtcbiAgICBmaWx0ZXI6IGNvbnRyYXN0KDAuMyk7XG4gIH1cblxuICAmOmhvdmVyIHtcbiAgICBjdXJzb3I6IHBvaW50ZXI7XG4gICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1zZWNvbmRhcnkpO1xuICB9XG5cbiAgJjpmb2N1cyB7XG4gICAgb3V0bGluZTogMDtcbiAgfVxufVxuXG5wcmUge1xuICAmOmhvdmVyID4gLmV4cGFuZC1idXR0b24ge1xuICAgIG9wYWNpdHk6IDE7XG4gICAgdHJhbnNpdGlvbjogMC4ycztcbiAgfVxufVxuXG4jbWVybWFpZC1jb250YWluZXIge1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIGNvbnRhaW46IGxheW91dDtcbiAgei1pbmRleDogOTk5O1xuICBsZWZ0OiAwO1xuICB0b3A6IDA7XG4gIHdpZHRoOiAxMDB2dztcbiAgaGVpZ2h0OiAxMDB2aDtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgZGlzcGxheTogbm9uZTtcbiAgYmFja2Ryb3AtZmlsdGVyOiBibHVyKDRweCk7XG4gIGJhY2tncm91bmQ6IHJnYmEoMCwgMCwgMCwgMC41KTtcblxuICAmLmFjdGl2ZSB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgJiA+ICNtZXJtYWlkLXNwYWNlIHtcbiAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1saWdodGdyYXkpO1xuICAgIGJhY2tncm91bmQtY29sb3I6IHZhcigtLWxpZ2h0KTtcbiAgICBib3JkZXItcmFkaXVzOiA1cHg7XG4gICAgcG9zaXRpb246IGZpeGVkO1xuICAgIHRvcDogNTAlO1xuICAgIGxlZnQ6IDUwJTtcbiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTtcbiAgICBoZWlnaHQ6IDgwdmg7XG4gICAgd2lkdGg6IDgwdnc7XG4gICAgb3ZlcmZsb3c6IGhpZGRlbjtcblxuICAgICYgPiAubWVybWFpZC1jb250ZW50IHtcbiAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjFzIGVhc2U7XG4gICAgICBvdmVyZmxvdzogdmlzaWJsZTtcbiAgICAgIG1pbi1oZWlnaHQ6IDIwMHB4O1xuICAgICAgbWluLXdpZHRoOiAyMDBweDtcblxuICAgICAgcHJlIHtcbiAgICAgICAgbWFyZ2luOiAwO1xuICAgICAgICBib3JkZXI6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIHN2ZyB7XG4gICAgICAgIG1heC13aWR0aDogbm9uZTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgfVxuICAgIH1cblxuICAgICYgPiAubWVybWFpZC1jb250cm9scyB7XG4gICAgICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gICAgICBib3R0b206IDIwcHg7XG4gICAgICByaWdodDogMjBweDtcbiAgICAgIGRpc3BsYXk6IGZsZXg7XG4gICAgICBnYXA6IDhweDtcbiAgICAgIHBhZGRpbmc6IDhweDtcbiAgICAgIGJhY2tncm91bmQ6IHZhcigtLWxpZ2h0KTtcbiAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWxpZ2h0Z3JheSk7XG4gICAgICBib3JkZXItcmFkaXVzOiA2cHg7XG4gICAgICBib3gtc2hhZG93OiAwIDJweCA0cHggcmdiYSgwLCAwLCAwLCAwLjEpO1xuICAgICAgei1pbmRleDogMjtcblxuICAgICAgLm1lcm1haWQtY29udHJvbC1idXR0b24ge1xuICAgICAgICBkaXNwbGF5OiBmbGV4O1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjtcbiAgICAgICAgd2lkdGg6IDMycHg7XG4gICAgICAgIGhlaWdodDogMzJweDtcbiAgICAgICAgcGFkZGluZzogMDtcbiAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHQpO1xuICAgICAgICBjb2xvcjogdmFyKC0tZGFyayk7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICBmb250LXNpemU6IDE2cHg7XG4gICAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1ib2R5Rm9udCk7XG4gICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzIGVhc2U7XG5cbiAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tbGlnaHRncmF5KTtcbiAgICAgICAgfVxuXG4gICAgICAgICY6YWN0aXZlIHtcbiAgICAgICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KTtcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIFN0eWxlIHRoZSByZXNldCBidXR0b24gZGlmZmVyZW50bHlcbiAgICAgICAgJjpudGgtY2hpbGQoMikge1xuICAgICAgICAgIHdpZHRoOiBhdXRvO1xuICAgICAgICAgIHBhZGRpbmc6IDAgMTJweDtcbiAgICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbn1cbiJdfQ== */</style><link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" data-persist="true"/><script src="../prescript.js" type="application/javascript" data-persist="true"></script><script type="application/javascript" data-persist="true">const fetchData = fetch("../static/contentIndex.json").then(data => data.json())</script><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://studyuann.github.io/msp_blog/index.xml"/></head><body data-slug="mgz/4장-AWS-컴퓨팅-아키텍처-(EC2,-인스턴스-스토리지,-요금-옵션)"><div id="quartz-root" class="page"><div id="quartz-body"><div class="left sidebar"><h2 class="page-title"><a href="..">yuann의 기술 블로그</a></h2><div class="spacer mobile-only"></div><div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 1rem;"><div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><div class="search"><button class="search-button"><svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title>Search</title><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"></path><circle cx="8" cy="8" r="7"></circle></g></svg><p>검색</p></button><div class="search-container"><div class="search-space"><input autocomplete="off" class="search-bar" name="search" type="text" aria-label="검색어를 입력하세요" placeholder="검색어를 입력하세요"/><div class="search-layout" data-preview="true"></div></div></div></div></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="darkmode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="dayIcon" x="0px" y="0px" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35" xml:space="preserve" aria-label="다크 모드"><title>다크 모드</title><path d="M6,17.5C6,16.672,5.328,16,4.5,16h-3C0.672,16,0,16.672,0,17.5    S0.672,19,1.5,19h3C5.328,19,6,18.328,6,17.5z M7.5,26c-0.414,0-0.789,0.168-1.061,0.439l-2,2C4.168,28.711,4,29.086,4,29.5    C4,30.328,4.671,31,5.5,31c0.414,0,0.789-0.168,1.06-0.44l2-2C8.832,28.289,9,27.914,9,27.5C9,26.672,8.329,26,7.5,26z M17.5,6    C18.329,6,19,5.328,19,4.5v-3C19,0.672,18.329,0,17.5,0S16,0.672,16,1.5v3C16,5.328,16.671,6,17.5,6z M27.5,9    c0.414,0,0.789-0.168,1.06-0.439l2-2C30.832,6.289,31,5.914,31,5.5C31,4.672,30.329,4,29.5,4c-0.414,0-0.789,0.168-1.061,0.44    l-2,2C26.168,6.711,26,7.086,26,7.5C26,8.328,26.671,9,27.5,9z M6.439,8.561C6.711,8.832,7.086,9,7.5,9C8.328,9,9,8.328,9,7.5    c0-0.414-0.168-0.789-0.439-1.061l-2-2C6.289,4.168,5.914,4,5.5,4C4.672,4,4,4.672,4,5.5c0,0.414,0.168,0.789,0.439,1.06    L6.439,8.561z M33.5,16h-3c-0.828,0-1.5,0.672-1.5,1.5s0.672,1.5,1.5,1.5h3c0.828,0,1.5-0.672,1.5-1.5S34.328,16,33.5,16z     M28.561,26.439C28.289,26.168,27.914,26,27.5,26c-0.828,0-1.5,0.672-1.5,1.5c0,0.414,0.168,0.789,0.439,1.06l2,2    C28.711,30.832,29.086,31,29.5,31c0.828,0,1.5-0.672,1.5-1.5c0-0.414-0.168-0.789-0.439-1.061L28.561,26.439z M17.5,29    c-0.829,0-1.5,0.672-1.5,1.5v3c0,0.828,0.671,1.5,1.5,1.5s1.5-0.672,1.5-1.5v-3C19,29.672,18.329,29,17.5,29z M17.5,7    C11.71,7,7,11.71,7,17.5S11.71,28,17.5,28S28,23.29,28,17.5S23.29,7,17.5,7z M17.5,25c-4.136,0-7.5-3.364-7.5-7.5    c0-4.136,3.364-7.5,7.5-7.5c4.136,0,7.5,3.364,7.5,7.5C25,21.636,21.636,25,17.5,25z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="nightIcon" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100" xml:space="preserve" aria-label="라이트 모드"><title>라이트 모드</title><path d="M96.76,66.458c-0.853-0.852-2.15-1.064-3.23-0.534c-6.063,2.991-12.858,4.571-19.655,4.571  C62.022,70.495,50.88,65.88,42.5,57.5C29.043,44.043,25.658,23.536,34.076,6.47c0.532-1.08,0.318-2.379-0.534-3.23  c-0.851-0.852-2.15-1.064-3.23-0.534c-4.918,2.427-9.375,5.619-13.246,9.491c-9.447,9.447-14.65,22.008-14.65,35.369  c0,13.36,5.203,25.921,14.65,35.368s22.008,14.65,35.368,14.65c13.361,0,25.921-5.203,35.369-14.65  c3.872-3.871,7.064-8.328,9.491-13.246C97.826,68.608,97.611,67.309,96.76,66.458z"></path></svg></button></div><div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;"><button class="readermode"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="readerIcon" fill="currentColor" stroke="currentColor" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" width="64px" height="64px" viewBox="0 0 24 24" aria-label="리더 모드"><title>리더 모드</title><g transform="translate(-1.8, -1.8) scale(1.15, 1.2)"><path d="M8.9891247,2.5 C10.1384702,2.5 11.2209868,2.96705384 12.0049645,3.76669482 C12.7883914,2.96705384 13.8709081,2.5 15.0202536,2.5 L18.7549359,2.5 C19.1691495,2.5 19.5049359,2.83578644 19.5049359,3.25 L19.5046891,4.004 L21.2546891,4.00457396 C21.6343849,4.00457396 21.9481801,4.28672784 21.9978425,4.6528034 L22.0046891,4.75457396 L22.0046891,20.25 C22.0046891,20.6296958 21.7225353,20.943491 21.3564597,20.9931534 L21.2546891,21 L2.75468914,21 C2.37499337,21 2.06119817,20.7178461 2.01153575,20.3517706 L2.00468914,20.25 L2.00468914,4.75457396 C2.00468914,4.37487819 2.28684302,4.061083 2.65291858,4.01142057 L2.75468914,4.00457396 L4.50368914,4.004 L4.50444233,3.25 C4.50444233,2.87030423 4.78659621,2.55650904 5.15267177,2.50684662 L5.25444233,2.5 L8.9891247,2.5 Z M4.50368914,5.504 L3.50468914,5.504 L3.50468914,19.5 L10.9478955,19.4998273 C10.4513189,18.9207296 9.73864328,18.5588115 8.96709342,18.5065584 L8.77307039,18.5 L5.25444233,18.5 C4.87474657,18.5 4.56095137,18.2178461 4.51128895,17.8517706 L4.50444233,17.75 L4.50368914,5.504 Z M19.5049359,17.75 C19.5049359,18.1642136 19.1691495,18.5 18.7549359,18.5 L15.2363079,18.5 C14.3910149,18.5 13.5994408,18.8724714 13.0614828,19.4998273 L20.5046891,19.5 L20.5046891,5.504 L19.5046891,5.504 L19.5049359,17.75 Z M18.0059359,3.999 L15.0202536,4 L14.8259077,4.00692283 C13.9889509,4.06666544 13.2254227,4.50975805 12.7549359,5.212 L12.7549359,17.777 L12.7782651,17.7601316 C13.4923805,17.2719483 14.3447024,17 15.2363079,17 L18.0059359,16.999 L18.0056891,4.798 L18.0033792,4.75457396 L18.0056891,4.71 L18.0059359,3.999 Z M8.9891247,4 L6.00368914,3.999 L6.00599909,4.75457396 L6.00599909,4.75457396 L6.00368914,4.783 L6.00368914,16.999 L8.77307039,17 C9.57551536,17 10.3461406,17.2202781 11.0128313,17.6202194 L11.2536891,17.776 L11.2536891,5.211 C10.8200889,4.56369974 10.1361548,4.13636104 9.37521067,4.02745763 L9.18347055,4.00692283 L8.9891247,4 Z"></path></g></svg></button></div></div><div class="explorer" data-behavior="link" data-collapsed="collapsed" data-savestate="true" data-data-fns="{&quot;order&quot;:[&quot;filter&quot;,&quot;map&quot;,&quot;sort&quot;],&quot;sortFn&quot;:&quot;(a,b)=>!a.isFolder&amp;&amp;!b.isFolder||a.isFolder&amp;&amp;b.isFolder?a.displayName.localeCompare(b.displayName,void 0,{numeric:!0,sensitivity:\&quot;base\&quot;}):!a.isFolder&amp;&amp;b.isFolder?1:-1&quot;,&quot;filterFn&quot;:&quot;node=>node.slugSegment!==\&quot;tags\&quot;&quot;,&quot;mapFn&quot;:&quot;node=>node&quot;}"><button type="button" class="explorer-toggle mobile-explorer hide-until-loaded" data-mobile="true" aria-controls="explorer-29"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-menu"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><button type="button" class="title-button explorer-toggle desktop-explorer" data-mobile="false" aria-expanded="true"><h2>탐색기</h2><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div id="explorer-29" class="explorer-content" aria-expanded="false" role="group"><ul class="explorer-ul overflow" id="list-0"><li class="overflow-end"></li></ul></div><template id="template-file"><li><a href="#"></a></li></template><template id="template-folder"><li><div class="folder-container"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="5 8 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><polyline points="6 9 12 15 18 9"></polyline></svg><div><button class="folder-button"><span class="folder-title"></span></button></div></div><div class="folder-outer"><ul class="content"></ul></div></li></template></div></div><div class="center"><div class="page-header"><div class="popover-hint"><nav class="breadcrumb-container" aria-label="breadcrumbs"><div class="breadcrumb-element"><a href="../">Home</a><p> ❯ </p></div><div class="breadcrumb-element"><a href="../mgz/">mgz</a><p> ❯ </p></div><div class="breadcrumb-element"><a href>4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)</a></div></nav><h1 class="article-title">4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)</h1><p show-comma="true" class="content-meta"><time datetime="2026-03-30T15:00:00.000Z">2026년 3월 31일</time><span>25 min read</span></p></div></div><article class="popover-hint"><h1 id="4장-aws-컴퓨팅-아키텍처-ec2-인스턴스-스토리지-요금-옵션">4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4장-aws-컴퓨팅-아키텍처-ec2-인스턴스-스토리지-요금-옵션" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<hr/>
+<h1 id="41-컴퓨팅-서비스-개요">4.1 컴퓨팅 서비스 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#41-컴퓨팅-서비스-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>AWS에서 컴퓨팅 서비스는 애플리케이션을 실제로 실행하는 역할을 담당함.</p>
+<p>사용자가 웹 브라우저로 접속하거나, API를 호출하거나, 데이터 처리를 요청하면 결국 어딘가에서 연산이 수행되어야 하는데, 그 연산을 담당하는 계층이 컴퓨팅 계층임.</p>
+<p>AWS의 대표적인 컴퓨팅 서비스</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>서비스</th><th>설명</th></tr></thead><tbody><tr><td>EC2</td><td>가상 서버</td></tr><tr><td>Lambda</td><td>서버리스 함수 실행</td></tr><tr><td>ECS</td><td>컨테이너 오케스트레이션</td></tr><tr><td>EKS</td><td>Kubernetes 관리형 서비스</td></tr><tr><td>Elastic Beanstalk</td><td>애플리케이션 배포 자동화</td></tr></tbody></table></div>
+<p>이 장에서는 그중 가장 기본이 되는 <strong>Amazon EC2</strong>를 중심으로 학습함.</p>
+<hr/>
+<h1 id="42-amazon-ec2-개요">4.2 Amazon EC2 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#42-amazon-ec2-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Amazon EC2는 <strong>Elastic Compute Cloud</strong>의 약자이며, AWS에서 제공하는 가상 서버 서비스임.</p>
+<p>온프레미스에서 서버를 운영할 때는 다음과 같은 과정이 필요했음.</p>
+<ul>
+<li>서버 장비 구매</li>
+<li>랙 설치</li>
+<li>전원 연결</li>
+<li>네트워크 연결</li>
+<li>운영체제 설치</li>
+<li>보안 설정</li>
+<li>장애 대응</li>
+</ul>
+<p>AWS에서는 이러한 물리적 작업 없이 몇 번의 클릭 또는 명령어만으로 서버를 생성할 수 있음.</p>
+<p>즉, EC2는 <strong>필요한 만큼 빠르게 생성하고 제거할 수 있는 가상 컴퓨팅 자원</strong>임.</p>
+<p>EC2의 핵심 특징</p>
+<ul>
+<li>몇 분 안에 서버 생성 가능</li>
+<li>필요할 때만 사용 가능</li>
+<li>다양한 CPU / 메모리 사양 선택 가능</li>
+<li>보안 그룹, VPC와 연동 가능</li>
+<li>Auto Scaling 및 Load Balancer와 결합 가능</li>
+</ul>
+<hr/>
+<h1 id="43-ec2의-주요-구성-요소">4.3 EC2의 주요 구성 요소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#43-ec2의-주요-구성-요소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2 인스턴스를 생성할 때는 단순히 서버 이름만 정하는 것이 아니라 여러 요소를 함께 결정해야 함.</p>
+<p>EC2 주요 구성 요소</p>
+<ul>
+<li>AMI</li>
+<li>Instance Type</li>
+<li>Key Pair</li>
+<li>VPC / Subnet</li>
+<li>Security Group</li>
+<li>Storage</li>
+<li>IAM Role</li>
+<li>User Data</li>
+</ul>
+<hr/>
+<h2 id="431-ami">4.3.1 AMI<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#431-ami" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AMI는 <strong>Amazon Machine Image</strong>의 약자임.</p>
+<p>쉽게 말하면 EC2 인스턴스를 만들기 위한 <strong>운영체제 템플릿</strong>임.</p>
+<p>예</p>
+<ul>
+<li>Amazon Linux</li>
+<li>Ubuntu</li>
+<li>Red Hat Enterprise Linux</li>
+<li>Windows Server</li>
+</ul>
+<p>AMI에는 다음 정보가 포함될 수 있음.</p>
+<ul>
+<li>운영체제</li>
+<li>기본 패키지</li>
+<li>초기 설정</li>
+<li>애플리케이션 환경</li>
+</ul>
+<p>즉, AMI는 “빈 서버를 어떤 모습으로 시작할 것인가”를 결정하는 이미지 파일이라고 보면 됨.</p>
+<p>예를 들어</p>
+<ul>
+<li>Amazon Linux AMI 선택 → 리눅스 서버 생성</li>
+<li>Windows Server AMI 선택 → 윈도우 서버 생성</li>
+</ul>
+<hr/>
+<h2 id="432-instance-type">4.3.2 Instance Type<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#432-instance-type" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Instance Type은 EC2 인스턴스의 <strong>하드웨어 사양</strong>을 의미함.</p>
+<p>여기에는 CPU, 메모리, 네트워크 성능 등이 포함됨.</p>
+<p>예</p>
+<ul>
+<li>t3.micro</li>
+<li>t3.small</li>
+<li>m5.large</li>
+<li>c6i.large</li>
+<li>r6i.large</li>
+</ul>
+<p>이 이름은 아무 의미 없이 붙은 것이 아니라 일정한 규칙이 있음.</p>
+<p>예를 들어 <code>t3.micro</code>를 보면</p>
+<ul>
+<li><code>t</code> : 인스턴스 패밀리</li>
+<li><code>3</code> : 세대</li>
+<li><code>micro</code> : 크기</li>
+</ul>
+<p>즉, 인스턴스 타입은 “어떤 계열의 서버를 어느 정도 크기로 쓸 것인가”를 정하는 값임.</p>
+<hr/>
+<h2 id="433-key-pair">4.3.3 Key Pair<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#433-key-pair" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Key Pair는 Linux 인스턴스에 SSH로 접속할 때 사용하는 공개키 / 개인키 쌍임.</p>
+<p>구성</p>
+<ul>
+<li>Public Key : AWS가 EC2 내부에 저장</li>
+<li>Private Key : 사용자가 보관</li>
+</ul>
+<p>접속 예</p>
+<pre><code>ssh-i mykey.pem ec2-user@&lt;Public-IP>
+</code></pre>
+<p>중요한 점</p>
+<ul>
+<li><code>.pem</code> 파일은 재다운로드 불가능한 경우가 많음</li>
+<li>분실하면 접속 복구가 번거로움</li>
+<li>실습 환경에서는 학생별로 별도 키를 관리하는 것이 좋음</li>
+</ul>
+<hr/>
+<h2 id="434-security-group">4.3.4 Security Group<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#434-security-group" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Security Group은 인스턴스 수준의 가상 방화벽임.</p>
+<p>예</p>
+<ul>
+<li>SSH 허용</li>
+<li>HTTP 허용</li>
+<li>HTTPS 허용</li>
+</ul>
+<p>예시 규칙</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>방향</th><th>프로토콜</th><th>포트</th><th>소스</th></tr></thead><tbody><tr><td>Inbound</td><td>TCP</td><td>22</td><td>내 IP</td></tr><tr><td>Inbound</td><td>TCP</td><td>80</td><td>0.0.0.0/0</td></tr><tr><td>Inbound</td><td>TCP</td><td>443</td><td>0.0.0.0/0</td></tr></tbody></table></div>
+<p>Security Group은 <strong>Stateful</strong> 특성을 가짐.</p>
+<p>즉, 들어오는 요청을 허용하면 그에 대한 응답은 별도 규칙 없이 허용됨.</p>
+<hr/>
+<h2 id="435-user-data">4.3.5 User Data<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#435-user-data" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>User Data는 인스턴스가 <strong>최초 부팅될 때 자동으로 실행할 스크립트</strong>임.</p>
+<p>예를 들어 웹 서버를 생성하면서 Apache를 자동 설치할 수 있음.</p>
+<p>예시</p>
+<pre><code>#!/bin/bash
+yum update-y
+yum install-y httpd
+systemctl enable httpd
+systemctlstart httpd
+echo&quot;&lt;h1>Hello EC2&lt;/h1>&quot; > /var/www/html/index.html
+</code></pre>
+<p>이 스크립트를 넣고 EC2를 생성하면, 인스턴스가 부팅되면서 자동으로 웹 서버를 설치하고 시작함.</p>
+<p>즉, User Data는 서버 초기 설정을 자동화하는 매우 중요한 기능임.</p>
+<hr/>
+<h1 id="44-ec2-인스턴스-타입-분류">4.4 EC2 인스턴스 타입 분류<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#44-ec2-인스턴스-타입-분류" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2 인스턴스는 용도에 따라 여러 패밀리로 나뉨.</p>
+<hr/>
+<h2 id="441-범용-인스턴스-general-purpose">4.4.1 범용 인스턴스 (General Purpose)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#441-범용-인스턴스-general-purpose" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>범용 인스턴스는 CPU와 메모리가 비교적 균형 있게 제공되는 타입임.</p>
+<p>대표 예</p>
+<ul>
+<li>t3</li>
+<li>t4g</li>
+<li>m5</li>
+<li>m6i</li>
+</ul>
+<p>주요 용도</p>
+<ul>
+<li>일반 웹 서버</li>
+<li>개발 서버</li>
+<li>테스트 서버</li>
+<li>중소 규모 애플리케이션 서버</li>
+</ul>
+<p>특징</p>
+<ul>
+<li>가장 많이 사용됨</li>
+<li>실습 환경에서 적합함</li>
+<li>성능과 비용의 균형이 좋음</li>
+</ul>
+<hr/>
+<h2 id="442-컴퓨팅-최적화-인스턴스-compute-optimized">4.4.2 컴퓨팅 최적화 인스턴스 (Compute Optimized)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#442-컴퓨팅-최적화-인스턴스-compute-optimized" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>CPU 성능이 중요한 워크로드에 적합함.</p>
+<p>대표 예</p>
+<ul>
+<li>c5</li>
+<li>c6i</li>
+</ul>
+<p>주요 용도</p>
+<ul>
+<li>대규모 연산</li>
+<li>게임 서버</li>
+<li>배치 처리</li>
+<li>고성능 웹 계층</li>
+</ul>
+<hr/>
+<h2 id="443-메모리-최적화-인스턴스-memory-optimized">4.4.3 메모리 최적화 인스턴스 (Memory Optimized)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#443-메모리-최적화-인스턴스-memory-optimized" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>메모리가 중요한 워크로드에 적합함.</p>
+<p>대표 예</p>
+<ul>
+<li>r5</li>
+<li>r6i</li>
+</ul>
+<p>주요 용도</p>
+<ul>
+<li>대용량 캐시</li>
+<li>인메모리 DB</li>
+<li>분석 시스템</li>
+</ul>
+<hr/>
+<h2 id="444-스토리지-최적화-인스턴스-storage-optimized">4.4.4 스토리지 최적화 인스턴스 (Storage Optimized)<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#444-스토리지-최적화-인스턴스-storage-optimized" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>디스크 I/O 성능이 중요한 환경에서 사용함.</p>
+<p>대표 예</p>
+<ul>
+<li>i3</li>
+<li>i4i</li>
+</ul>
+<p>주요 용도</p>
+<ul>
+<li>고성능 데이터 처리</li>
+<li>로컬 NVMe 저장이 중요한 경우</li>
+</ul>
+<hr/>
+<h1 id="45-버스트-가능한-인스턴스">4.5 버스트 가능한 인스턴스<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#45-버스트-가능한-인스턴스" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p><code>t</code> 계열 인스턴스는 <strong>버스트 가능한 인스턴스</strong>임.</p>
+<p>예</p>
+<ul>
+<li>t2.micro</li>
+<li>t3.micro</li>
+<li>t3.small</li>
+</ul>
+<p>이 타입은 평소에는 낮은 CPU를 사용하다가, 필요할 때 일시적으로 CPU 성능을 높일 수 있음.</p>
+<p>즉, 항상 높은 CPU가 필요한 서버가 아니라</p>
+<ul>
+<li>실습용 서버</li>
+<li>개발용 서버</li>
+<li>소규모 웹 서버</li>
+</ul>
+<p>같은 환경에 적합함.</p>
+<p>교육 과정에서는 주로 <code>t3.micro</code> 또는 <code>t3.small</code>을 많이 사용함.</p>
+<hr/>
+<h1 id="46-ec2-스토리지-개요">4.6 EC2 스토리지 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#46-ec2-스토리지-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2는 서버 자체만으로 끝나지 않고, 스토리지와 함께 동작함.</p>
+<p>AWS에서 EC2와 연결되는 대표적인 스토리지는 다음과 같음.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>스토리지</th><th>설명</th></tr></thead><tbody><tr><td>EBS</td><td>네트워크 기반 블록 스토리지</td></tr><tr><td>Instance Store</td><td>물리 서버에 직접 연결된 임시 스토리지</td></tr><tr><td>EFS</td><td>여러 인스턴스가 공유 가능한 파일 스토리지</td></tr><tr><td>S3</td><td>객체 스토리지, EC2 외부 저장소</td></tr></tbody></table></div>
+<p>이 장에서는 EC2와 직접 관련이 깊은 <strong>EBS와 Instance Store</strong>를 중심으로 설명함.</p>
+<hr/>
+<h1 id="47-ebs-개요">4.7 EBS 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#47-ebs-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EBS는 <strong>Elastic Block Store</strong>의 약자임.</p>
+<p>EC2에 연결해서 사용하는 블록 스토리지임.</p>
+<p>온프레미스에서 말하면 서버에 연결된 디스크와 비슷한 개념이지만, 실제로는 AWS 내부 네트워크를 통해 연결되는 독립된 스토리지 서비스임.</p>
+<p>EBS 특징</p>
+<ul>
+<li>EC2와 분리된 저장소</li>
+<li>인스턴스를 종료해도 볼륨 유지 가능</li>
+<li>스냅샷 생성 가능</li>
+<li>성능 옵션 선택 가능</li>
+<li>운영체제 디스크로 주로 사용</li>
+</ul>
+<p>즉, EC2가 “컴퓨터 본체”라면 EBS는 “하드디스크” 역할을 함.</p>
+<hr/>
+<h2 id="471-ebs-볼륨-유형">4.7.1 EBS 볼륨 유형<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#471-ebs-볼륨-유형" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>대표적인 EBS 유형</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>유형</th><th>설명</th></tr></thead><tbody><tr><td>gp3</td><td>범용 SSD, 가장 많이 사용</td></tr><tr><td>gp2</td><td>이전 세대 범용 SSD</td></tr><tr><td>io1 / io2</td><td>고성능 IOPS 필요 시</td></tr><tr><td>st1</td><td>처리량 중심 HDD</td></tr><tr><td>sc1</td><td>저비용 HDD</td></tr></tbody></table></div>
+<p>교육용 / 일반 서버에서는 보통 <code>gp3</code>를 사용하면 됨.</p>
+<hr/>
+<h2 id="472-ebs의-장점">4.7.2 EBS의 장점<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#472-ebs의-장점" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>인스턴스 중지 후 다시 시작해도 데이터 유지됨</li>
+<li>스냅샷 생성으로 백업 가능</li>
+<li>용량 증설 가능</li>
+<li>운영체제 루트 디스크로 사용 가능</li>
+</ul>
+<hr/>
+<h1 id="48-instance-store-개요">4.8 Instance Store 개요<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#48-instance-store-개요" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Instance Store는 EC2가 실행되는 물리 호스트에 직접 연결된 로컬 디스크임.</p>
+<p>특징</p>
+<ul>
+<li>매우 빠름</li>
+<li>임시 데이터 저장에 적합</li>
+<li>인스턴스 중지 / 종료 시 데이터 유실 가능</li>
+<li>영구 저장소로 부적합</li>
+</ul>
+<p>즉, Instance Store는 빠르지만 <strong>휘발성 저장소</strong>라는 점이 핵심임.</p>
+<p>주요 용도</p>
+<ul>
+<li>캐시</li>
+<li>임시 파일</li>
+<li>버퍼 데이터</li>
+<li>일시적 처리 데이터</li>
+</ul>
+<hr/>
+<h2 id="481-ebs와-instance-store-비교">4.8.1 EBS와 Instance Store 비교<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#481-ebs와-instance-store-비교" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>EBS</th><th>Instance Store</th></tr></thead><tbody><tr><td>저장 위치</td><td>네트워크 기반</td><td>물리 호스트 로컬</td></tr><tr><td>영속성</td><td>유지 가능</td><td>인스턴스 종료/중지 시 유실 가능</td></tr><tr><td>백업</td><td>스냅샷 가능</td><td>별도 백업 필요</td></tr><tr><td>용도</td><td>운영체제, 데이터 저장</td><td>캐시, 임시 데이터</td></tr></tbody></table></div>
+<hr/>
+<h1 id="49-ec2-네트워크와-ip-주소">4.9 EC2 네트워크와 IP 주소<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#49-ec2-네트워크와-ip-주소" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2 인스턴스는 VPC 내부에서 실행되므로 네트워크 정보가 함께 부여됨.</p>
+<p>주요 개념</p>
+<ul>
+<li>Private IP</li>
+<li>Public IP</li>
+<li>Elastic IP</li>
+</ul>
+<hr/>
+<h2 id="491-private-ip">4.9.1 Private IP<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#491-private-ip" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>VPC 내부 통신용 IP 주소임.</p>
+<p>같은 VPC 내 다른 인스턴스나 RDS와 통신할 때 사용함.</p>
+<p>예</p>
+<pre><code>10.0.1.25
+</code></pre>
+<hr/>
+<h2 id="492-public-ip">4.9.2 Public IP<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#492-public-ip" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>인터넷과 통신하기 위한 IP 주소임.</p>
+<p>Public Subnet에 인스턴스를 배치하고 Public IP를 할당하면 외부에서 접속 가능함.</p>
+<p>주의</p>
+<ul>
+<li>인스턴스 중지 후 시작 시 Public IP가 바뀔 수 있음</li>
+</ul>
+<hr/>
+<h2 id="493-elastic-ip">4.9.3 Elastic IP<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#493-elastic-ip" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>고정 공인 IP 주소임.</p>
+<p>AWS 계정에 할당해 두고 특정 인스턴스에 연결함.</p>
+<p>용도</p>
+<ul>
+<li>고정 IP 필요 시</li>
+<li>외부 시스템에서 화이트리스트 등록이 필요한 경우</li>
+</ul>
+<p>주의</p>
+<ul>
+<li>사용하지 않고 할당만 해 두면 과금될 수 있음</li>
+</ul>
+<hr/>
+<h1 id="410-ec2-상태-변화">4.10 EC2 상태 변화<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#410-ec2-상태-변화" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2는 여러 상태를 가짐.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>상태</th><th>설명</th></tr></thead><tbody><tr><td>pending</td><td>생성 중</td></tr><tr><td>running</td><td>실행 중</td></tr><tr><td>stopping</td><td>중지 중</td></tr><tr><td>stopped</td><td>중지됨</td></tr><tr><td>shutting-down</td><td>종료 중</td></tr><tr><td>terminated</td><td>종료됨</td></tr></tbody></table></div>
+<p>중요한 점</p>
+<ul>
+<li><code>stopped</code> 상태는 디스크(EBS)는 유지되지만 서버는 꺼져 있음</li>
+<li><code>terminated</code> 상태는 인스턴스가 삭제된 상태임</li>
+<li>종료 시 EBS 삭제 옵션이 켜져 있으면 루트 볼륨도 함께 삭제될 수 있음</li>
+</ul>
+<hr/>
+<h1 id="411-ec2-요금-옵션">4.11 EC2 요금 옵션<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#411-ec2-요금-옵션" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2는 사양뿐 아니라 <strong>구매 방식</strong>도 중요함.</p>
+<p>같은 인스턴스 타입이라도 어떤 요금 옵션을 선택하느냐에 따라 비용 구조가 달라짐.</p>
+<p>대표적인 요금 옵션</p>
+<ul>
+<li>On-Demand</li>
+<li>Reserved Instances</li>
+<li>Savings Plans</li>
+<li>Spot Instances</li>
+<li>Dedicated Hosts / Dedicated Instances</li>
+</ul>
+<hr/>
+<h2 id="4111-on-demand">4.11.1 On-Demand<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4111-on-demand" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>가장 기본적인 과금 방식임.</p>
+<p>필요할 때 생성하고 사용한 만큼 비용을 지불함.</p>
+<p>특징</p>
+<ul>
+<li>약정 없음</li>
+<li>가장 유연함</li>
+<li>단기 실습 및 테스트에 적합</li>
+<li>장기 사용 시 상대적으로 비쌈</li>
+</ul>
+<p>교육 환경에서는 가장 많이 사용하는 방식임.</p>
+<hr/>
+<h2 id="4112-reserved-instances">4.11.2 Reserved Instances<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4112-reserved-instances" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>1년 또는 3년 약정을 통해 비용을 절감하는 방식임.</p>
+<p>특징</p>
+<ul>
+<li>장기 운영에 적합</li>
+<li>사용량이 일정한 서버에 유리</li>
+<li>On-Demand 대비 할인 가능</li>
+</ul>
+<p>적합한 예</p>
+<ul>
+<li>24시간 항상 실행되는 운영 웹 서버</li>
+<li>고정적인 DB 서버</li>
+</ul>
+<hr/>
+<h2 id="4113-savings-plans">4.11.3 Savings Plans<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4113-savings-plans" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>일정 금액 또는 사용량을 약정해서 할인받는 방식임.</p>
+<p>특징</p>
+<ul>
+<li>RI보다 유연한 경우가 많음</li>
+<li>EC2 외 일부 컴퓨팅 서비스까지 적용 가능</li>
+<li>장기 운영에서 비용 절감 효과가 큼</li>
+</ul>
+<hr/>
+<h2 id="4114-spot-instances">4.11.4 Spot Instances<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4114-spot-instances" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>AWS의 남는 자원을 매우 저렴하게 사용하는 방식임.</p>
+<p>특징</p>
+<ul>
+<li>매우 저렴함</li>
+<li>AWS 사정에 따라 언제든 회수될 수 있음</li>
+<li>중단 허용 가능한 작업에 적합</li>
+</ul>
+<p>적합한 예</p>
+<ul>
+<li>배치 처리</li>
+<li>테스트 환경</li>
+<li>렌더링 작업</li>
+<li>비핵심 워크로드</li>
+</ul>
+<p>부적합한 예</p>
+<ul>
+<li>중요한 운영 DB</li>
+<li>세션 유지가 중요한 단일 서버</li>
+</ul>
+<hr/>
+<h2 id="4115-요금-옵션-비교">4.11.5 요금 옵션 비교<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4115-요금-옵션-비교" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>옵션</th><th>장점</th><th>단점</th><th>적합한 환경</th></tr></thead><tbody><tr><td>On-Demand</td><td>유연함</td><td>비용 높음</td><td>실습, 테스트</td></tr><tr><td>Reserved</td><td>할인 큼</td><td>약정 필요</td><td>장기 운영</td></tr><tr><td>Savings Plans</td><td>유연한 할인</td><td>약정 필요</td><td>장기 컴퓨팅</td></tr><tr><td>Spot</td><td>매우 저렴</td><td>중단 가능</td><td>배치, 일시 작업</td></tr></tbody></table></div>
+<hr/>
+<h1 id="412-ec2-운영-시-고려사항">4.12 EC2 운영 시 고려사항<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#412-ec2-운영-시-고려사항" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2는 단순히 만들고 끝나는 서비스가 아님.</p>
+<p>실제 운영에서는 다음 항목을 반드시 고려해야 함.</p>
+<hr/>
+<h2 id="4121-단일-ec2의-한계">4.12.1 단일 EC2의 한계<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4121-단일-ec2의-한계" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>한 대의 EC2만 운영하면 다음 문제가 있음.</p>
+<ul>
+<li>장애 시 서비스 중단</li>
+<li>확장 한계</li>
+<li>수동 운영 필요</li>
+<li>패치 관리 부담</li>
+</ul>
+<p>따라서 실제 운영 환경에서는 보통 다음과 같이 구성함.</p>
+<ul>
+<li>ALB 앞단 배치</li>
+<li>Auto Scaling Group 구성</li>
+<li>다중 AZ 배치</li>
+<li>RDS / ElastiCache 연계</li>
+</ul>
+<p>즉, EC2는 독립적으로 보기보다 <strong>아키텍처의 일부로 이해해야 함.</strong></p>
+<hr/>
+<h2 id="4122-보안-고려사항">4.12.2 보안 고려사항<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4122-보안-고려사항" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>SSH는 필요한 IP만 허용</li>
+<li>0.0.0.0/0으로 22번 포트 전면 개방 지양</li>
+<li>IAM Role 사용</li>
+<li>Access Key를 인스턴스에 직접 저장하지 않음</li>
+<li>OS 패치 수행</li>
+<li>CloudWatch / SSM 연계 고려</li>
+</ul>
+<hr/>
+<h2 id="4123-비용-고려사항">4.12.3 비용 고려사항<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4123-비용-고려사항" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<ul>
+<li>필요 없는 인스턴스는 중지 또는 종료</li>
+<li>EBS 미사용 볼륨 정리</li>
+<li>Elastic IP 미사용 자원 정리</li>
+<li>과도한 인스턴스 타입 사용 지양</li>
+</ul>
+<hr/>
+<h1 id="413-실습--ec2-웹-서버-생성">4.13 실습 : EC2 웹 서버 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#413-실습--ec2-웹-서버-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실습 목표</p>
+<ul>
+<li>EC2 인스턴스를 생성함</li>
+<li>보안 그룹을 구성함</li>
+<li>User Data로 웹 서버를 자동 설치함</li>
+<li>브라우저에서 웹 페이지 접속을 확인함</li>
+</ul>
+<hr/>
+<h2 id="4131-사전-준비">4.13.1 사전 준비<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4131-사전-준비" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>필요 자원</p>
+<ul>
+<li>3장에서 생성한 VPC</li>
+<li>Public Subnet</li>
+<li>Internet Gateway</li>
+<li>Public Route Table</li>
+</ul>
+<hr/>
+<h2 id="4132-보안-그룹-생성">4.13.2 보안 그룹 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4132-보안-그룹-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>EC2 콘솔 또는 VPC 콘솔에서 생성함.</p>
+<p>이름</p>
+<pre><code>이니셜-sg-web
+</code></pre>
+<p>Inbound Rules</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>타입</th><th>프로토콜</th><th>포트</th><th>소스</th></tr></thead><tbody><tr><td>SSH</td><td>TCP</td><td>22</td><td>내 IP</td></tr><tr><td>HTTP</td><td>TCP</td><td>80</td><td>0.0.0.0/0</td></tr></tbody></table></div>
+<p>설명</p>
+<ul>
+<li>SSH는 관리자 접속용</li>
+<li>HTTP는 웹 접속 테스트용</li>
+<li>실습에서는 HTTPS보다 HTTP부터 확인하는 것이 편함</li>
+</ul>
+<hr/>
+<h2 id="4133-key-pair-생성">4.13.3 Key Pair 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4133-key-pair-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>EC2 콘솔에서 Key Pair를 생성함.</p>
+<p>이름</p>
+<pre><code>이니셜-key
+</code></pre>
+<p>형식</p>
+<pre><code>.pem
+</code></pre>
+<p>주의</p>
+<ul>
+<li>다운로드한 개인키는 안전한 위치에 보관</li>
+<li>리눅스/macOS에서는 권한 조정 필요</li>
+</ul>
+<pre><code>chmod400 이니셜-key.pem
+</code></pre>
+<p>이 명령은 개인키 파일의 권한을 소유자 읽기 전용으로 제한하는 명령임.</p>
+<p>SSH는 개인키 파일의 권한이 너무 넓으면 보안상 위험하다고 판단하여 접속을 거부할 수 있음.</p>
+<p>따라서 <code>.pem</code> 파일을 사용할 때는 보통 먼저 <code>chmod 400</code>으로 권한을 제한함.</p>
+<hr/>
+<h2 id="4134-ec2-인스턴스-생성">4.13.4 EC2 인스턴스 생성<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4134-ec2-인스턴스-생성" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>EC2 콘솔 → Instances → Launch instances</p>
+<p>설정 예</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="table-container"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>Name</td><td>이니셜-ec2-web</td></tr><tr><td>AMI</td><td>Amazon Linux 2023</td></tr><tr><td>Instance Type</td><td>t3.micro</td></tr><tr><td>Key Pair</td><td>이니셜-key</td></tr><tr><td>VPC</td><td>이니셜-vpc-main</td></tr><tr><td>Subnet</td><td>이니셜-subnet-public-a</td></tr><tr><td>Auto-assign Public IP</td><td>Enable</td></tr><tr><td>Security Group</td><td>이니셜-sg-web</td></tr></tbody></table></div>
+<hr/>
+<h2 id="4135-user-data-입력">4.13.5 User Data 입력<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4135-user-data-입력" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>Advanced details에서 User Data에 아래 스크립트를 입력함.</p>
+<figure data-rehype-pretty-code-figure><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display:grid;"><span data-line><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;">#!/bin/bash</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">dnf</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> update-y</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">dnf</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> install-y</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> httpd</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">systemctl</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> enable</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> httpd</span></span>
+<span data-line><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">systemctlstart</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> httpd</span></span>
+<span data-line><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">echo</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0;">&quot;&lt;h1>Welcome to EC2 Web Server&lt;/h1>&quot;</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;"> ></span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;"> /var/www/html/index.html</span></span></code></pre></figure>
+<h3 id="명령어-설명">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="binbash"><code>#!/bin/bash</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#binbash" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>이 스크립트를 bash 셸로 실행하라는 의미임.</p>
+<p>리눅스 스크립트의 첫 줄에 자주 들어가는 선언문임.</p>
+<h3 id="dnf-update--y"><code>dnf update -y</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#dnf-update--y" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>설치된 패키지 목록과 패키지를 최신 상태로 업데이트함.</p>
+<ul>
+<li><code>y</code> 옵션은 중간에 확인 질문이 나왔을 때 자동으로 yes를 입력하는 역할을 함.</li>
+</ul>
+<h3 id="dnf-install--y-httpd"><code>dnf install -y httpd</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#dnf-install--y-httpd" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Apache 웹 서버 패키지인 <code>httpd</code>를 설치함.</p>
+<p>Amazon Linux 2023 계열에서는 패키지 관리 도구로 <code>dnf</code>를 사용함.</p>
+<h3 id="systemctl-enable-httpd"><code>systemctl enable httpd</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#systemctl-enable-httpd" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>부팅할 때 Apache가 자동 실행되도록 설정함.</p>
+<p>즉, 서버를 재부팅해도 웹 서버가 다시 올라오게 만듦.</p>
+<h3 id="systemctl-start-httpd"><code>systemctl start httpd</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#systemctl-start-httpd" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>지금 즉시 Apache 서비스를 실행함.</p>
+<h3 id="echo-h1welcome-to-ec2-web-serverh1--varwwwhtmlindexhtml"><code>echo &quot;&lt;h1>Welcome to EC2 Web Server&lt;/h1>&quot; > /var/www/html/index.html</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#echo-h1welcome-to-ec2-web-serverh1--varwwwhtmlindexhtml" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>웹 서버의 기본 문서 경로에 HTML 파일을 생성함.</p>
+<p>브라우저에서 해당 EC2의 IP로 접속하면 이 문장이 표시됨.</p>
+<hr/>
+<h2 id="4136-접속-확인">4.13.6 접속 확인<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4136-접속-확인" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>인스턴스가 Running 상태가 된 뒤, Public IPv4 주소를 복사해 브라우저에서 접속함.</p>
+<p>예</p>
+<pre><code>http://43.x.x.x
+</code></pre>
+<p>정상 동작 시 아래와 비슷한 문구가 표시됨.</p>
+<pre><code>Welcome to EC2 Web Server
+</code></pre>
+<hr/>
+<h1 id="414-실습--ssh-접속">4.14 실습 : SSH 접속<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#414-실습--ssh-접속" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>Linux / macOS / WSL 환경에서 실행</p>
+<pre><code>ssh-i 이니셜-key.pem ec2-user@&lt;EC2-Public-IP>
+</code></pre>
+<p>예</p>
+<pre><code>ssh-i kyt-key.pem ec2-user@43.201.10.10
+</code></pre>
+<h3 id="명령어-설명-1">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-1" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="ssh"><code>ssh</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ssh" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>원격 서버에 안전하게 접속하기 위한 Secure Shell 명령어임.</p>
+<h3 id="i-이니셜-keypem"><code>i 이니셜-key.pem</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#i-이니셜-keypem" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>접속 시 사용할 개인키 파일을 지정함.</p>
+<p>AWS EC2는 비밀번호 방식보다 키 기반 인증을 많이 사용함.</p>
+<h3 id="ec2-user"><code>ec2-user</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ec2-user" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>Amazon Linux 계열의 기본 로그인 계정임.</p>
+<p>Ubuntu AMI를 썼다면 기본 계정은 보통 <code>ubuntu</code>임.</p>
+<h3 id="ec2-public-ip"><code>@&lt;EC2-Public-IP></code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#ec2-public-ip" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>접속 대상 서버의 공인 IP 주소를 지정함.</p>
+<hr/>
+<h2 id="4141-웹-서버-동작-확인-명령">4.14.1 웹 서버 동작 확인 명령<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4141-웹-서버-동작-확인-명령" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>SSH 접속 후 아래 명령으로 상태를 확인함.</p>
+<pre><code>systemctl status httpd
+</code></pre>
+<p>이 명령은 Apache 서비스 상태를 확인하는 명령임.</p>
+<p>확인 포인트</p>
+<ul>
+<li>active (running) 상태인지 확인</li>
+<li>비정상 종료되었는지 확인</li>
+<li>에러 메시지가 있는지 확인</li>
+</ul>
+<p>추가 확인</p>
+<pre><code>curl localhost
+</code></pre>
+<p>이 명령은 자기 자신 서버의 웹 서버에 HTTP 요청을 보내는 명령임.</p>
+<p>브라우저 없이도 웹 페이지 응답을 텍스트로 확인할 수 있음.</p>
+<p>정상 동작 시</p>
+<pre><code>&lt;h1>Welcome to EC2 Web Server&lt;/h1>
+</code></pre>
+<p>가 출력됨.</p>
+<hr/>
+<h1 id="415-aws-cli로-ec2-조회-실습">4.15 AWS CLI로 EC2 조회 실습<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#415-aws-cli로-ec2-조회-실습" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>CLI로 인스턴스 정보를 조회할 수 있음.</p>
+<hr/>
+<h2 id="4151-인스턴스-목록-조회">4.15.1 인스턴스 목록 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4151-인스턴스-목록-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws ec2 describe-instances
+</code></pre>
+<p>이 명령은 계정 내 EC2 인스턴스의 상세 정보를 JSON 형식으로 반환함.</p>
+<p>출력 내용이 매우 많기 때문에 처음 보면 복잡할 수 있음.</p>
+<p>포함되는 정보 예</p>
+<ul>
+<li>InstanceId</li>
+<li>InstanceType</li>
+<li>PrivateIpAddress</li>
+<li>PublicIpAddress</li>
+<li>State</li>
+<li>SecurityGroups</li>
+<li>SubnetId</li>
+<li>VpcId</li>
+</ul>
+<hr/>
+<h2 id="4152-실행-중인-인스턴스만-조회">4.15.2 실행 중인 인스턴스만 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4152-실행-중인-인스턴스만-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws ec2 describe-instances \
+--filters&quot;Name=instance-state-name,Values=running&quot;
+</code></pre>
+<h3 id="명령어-설명-2">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-2" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="--filters"><code>--filters</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#--filters" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>조건을 걸어 필요한 결과만 조회하는 옵션임.</p>
+<h3 id="nameinstance-state-namevaluesrunning"><code>&quot;Name=instance-state-name,Values=running&quot;</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#nameinstance-state-namevaluesrunning" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>인스턴스 상태가 <code>running</code>인 것만 조회하겠다는 의미임.</p>
+<p>즉, 이 명령은 전체 인스턴스 중 현재 실행 중인 서버만 필터링해서 보여줌.</p>
+<hr/>
+<h2 id="4153-특정-항목만-간단히-조회">4.15.3 특정 항목만 간단히 조회<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4153-특정-항목만-간단히-조회" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<pre><code>aws ec2 describe-instances \
+--query&quot;Reservations[*].Instances[*].[InstanceId,InstanceType,PrivateIpAddress,PublicIpAddress,State.Name]&quot; \
+--output table
+</code></pre>
+<h3 id="명령어-설명-3">명령어 설명<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#명령어-설명-3" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<h3 id="--query"><code>--query</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#--query" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>JMESPath 문법을 사용해서 원하는 필드만 추출함.</p>
+<h3 id="reservationsinstances"><code>Reservations[*].Instances[*]</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#reservationsinstances" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>AWS EC2 응답 JSON 구조에서 인스턴스 목록이 위치한 경로임.</p>
+<h3 id="instanceidinstancetypeprivateipaddresspublicipaddressstatename"><code>[InstanceId,InstanceType,PrivateIpAddress,PublicIpAddress,State.Name]</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#instanceidinstancetypeprivateipaddresspublicipaddressstatename" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>표시할 항목만 선택함.</p>
+<h3 id="--output-table"><code>--output table</code><a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#--output-table" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>결과를 JSON 대신 표 형식으로 출력함.</p>
+<p>이 명령은 실습 중 인스턴스 상태를 빠르게 확인할 때 매우 유용함.</p>
+<hr/>
+<h1 id="416-ec2-구매-옵션-설계-관점-정리">4.16 EC2 구매 옵션 설계 관점 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#416-ec2-구매-옵션-설계-관점-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>실무에서 인스턴스 선택은 단순히 “싸면 좋다”가 아니라 워크로드 특성을 보고 결정해야 함.</p>
+<hr/>
+<h2 id="4161-교육용--실습용-환경">4.16.1 교육용 / 실습용 환경<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4161-교육용--실습용-환경" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>추천 방식</p>
+<ul>
+<li>On-Demand</li>
+<li>t3.micro 또는 t3.small</li>
+</ul>
+<p>이유</p>
+<ul>
+<li>유연하게 생성 / 삭제 가능</li>
+<li>약정이 필요 없음</li>
+<li>학생별 실습 환경에 적합</li>
+</ul>
+<hr/>
+<h2 id="4162-운영-웹-서버">4.16.2 운영 웹 서버<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4162-운영-웹-서버" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>추천 방식</p>
+<ul>
+<li>Reserved Instances 또는 Savings Plans</li>
+<li>m 계열 또는 적절한 범용 인스턴스</li>
+</ul>
+<p>이유</p>
+<ul>
+<li>항상 켜져 있는 서버라 할인 효과 큼</li>
+<li>장기 예측 가능한 사용량에 적합</li>
+</ul>
+<hr/>
+<h2 id="4163-배치-처리--일시-작업">4.16.3 배치 처리 / 일시 작업<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4163-배치-처리--일시-작업" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h2>
+<p>추천 방식</p>
+<ul>
+<li>Spot Instance</li>
+</ul>
+<p>이유</p>
+<ul>
+<li>비용 절감 효과 큼</li>
+<li>중단되어도 다시 실행 가능한 작업에 적합</li>
+</ul>
+<hr/>
+<h1 id="417-ec2-아키텍처-관점-핵심-정리">4.17 EC2 아키텍처 관점 핵심 정리<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#417-ec2-아키텍처-관점-핵심-정리" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h1>
+<p>EC2를 아키텍처 관점에서 보면 다음이 중요함.</p>
+<h3 id="1-ec2-한-대는-아키텍처가-아님">1. EC2 한 대는 아키텍처가 아님<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#1-ec2-한-대는-아키텍처가-아님" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<p>단일 서버는 장애에 취약함.</p>
+<p>운영 환경에서는 Load Balancer, Auto Scaling, Multi AZ와 결합해야 함.</p>
+<h3 id="2-스토리지를-구분해서-봐야-함">2. 스토리지를 구분해서 봐야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#2-스토리지를-구분해서-봐야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>OS 디스크와 데이터 디스크</li>
+<li>영구 저장소와 임시 저장소</li>
+<li>EBS와 Instance Store 차이</li>
+</ul>
+<h3 id="3-비용과-성능을-함께-고려해야-함">3. 비용과 성능을 함께 고려해야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#3-비용과-성능을-함께-고려해야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>무조건 큰 인스턴스가 좋은 것이 아님</li>
+<li>워크로드에 맞는 타입을 선택해야 함</li>
+</ul>
+<h3 id="4-네트워크와-보안이-같이-따라와야-함">4. 네트워크와 보안이 같이 따라와야 함<a role="anchor" aria-hidden="true" tabindex="-1" data-no-popover="true" href="#4-네트워크와-보안이-같이-따라와야-함" class="internal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a></h3>
+<ul>
+<li>Public / Private Subnet 구분</li>
+<li>보안 그룹 최소 허용</li>
+<li>IAM Role 활용</li>
+</ul>
+<hr/></article><hr/><div class="page-footer"></div></div><div class="right sidebar"><div class="graph"><h3>그래프 뷰</h3><div class="graph-outer"><div class="graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:1,&quot;scale&quot;:1.1,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.3,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:false,&quot;enableRadial&quot;:false}"></div><button class="global-graph-icon" aria-label="Global Graph"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 55 55" fill="currentColor" xml:space="preserve"><path d="M49,0c-3.309,0-6,2.691-6,6c0,1.035,0.263,2.009,0.726,2.86l-9.829,9.829C32.542,17.634,30.846,17,29,17
+                s-3.542,0.634-4.898,1.688l-7.669-7.669C16.785,10.424,17,9.74,17,9c0-2.206-1.794-4-4-4S9,6.794,9,9s1.794,4,4,4
+                c0.74,0,1.424-0.215,2.019-0.567l7.669,7.669C21.634,21.458,21,23.154,21,25s0.634,3.542,1.688,4.897L10.024,42.562
+                C8.958,41.595,7.549,41,6,41c-3.309,0-6,2.691-6,6s2.691,6,6,6s6-2.691,6-6c0-1.035-0.263-2.009-0.726-2.86l12.829-12.829
+                c1.106,0.86,2.44,1.436,3.898,1.619v10.16c-2.833,0.478-5,2.942-5,5.91c0,3.309,2.691,6,6,6s6-2.691,6-6c0-2.967-2.167-5.431-5-5.91
+                v-10.16c1.458-0.183,2.792-0.759,3.898-1.619l7.669,7.669C41.215,39.576,41,40.26,41,41c0,2.206,1.794,4,4,4s4-1.794,4-4
+                s-1.794-4-4-4c-0.74,0-1.424,0.215-2.019,0.567l-7.669-7.669C36.366,28.542,37,26.846,37,25s-0.634-3.542-1.688-4.897l9.665-9.665
+                C46.042,11.405,47.451,12,49,12c3.309,0,6-2.691,6-6S52.309,0,49,0z M11,9c0-1.103,0.897-2,2-2s2,0.897,2,2s-0.897,2-2,2
+                S11,10.103,11,9z M6,51c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S8.206,51,6,51z M33,49c0,2.206-1.794,4-4,4s-4-1.794-4-4
+                s1.794-4,4-4S33,46.794,33,49z M29,31c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S32.309,31,29,31z M47,41c0,1.103-0.897,2-2,2
+                s-2-0.897-2-2s0.897-2,2-2S47,39.897,47,41z M49,10c-2.206,0-4-1.794-4-4s1.794-4,4-4s4,1.794,4,4S51.206,10,49,10z"></path></svg></button></div><div class="global-graph-outer"><div class="global-graph-container" data-cfg="{&quot;drag&quot;:true,&quot;zoom&quot;:true,&quot;depth&quot;:-1,&quot;scale&quot;:0.9,&quot;repelForce&quot;:0.5,&quot;centerForce&quot;:0.2,&quot;linkDistance&quot;:30,&quot;fontSize&quot;:0.6,&quot;opacityScale&quot;:1,&quot;showTags&quot;:true,&quot;removeTags&quot;:[],&quot;focusOnHover&quot;:true,&quot;enableRadial&quot;:true}"></div></div></div><div class="toc desktop-only"><button type="button" class="toc-header" aria-controls="toc-27" aria-expanded="true"><h3>목차</h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fold"><polyline points="6 9 12 15 18 9"></polyline></svg></button><ul id="list-1" class="toc-content overflow"><li class="depth-0"><a href="#4장-aws-컴퓨팅-아키텍처-ec2-인스턴스-스토리지-요금-옵션" data-for="4장-aws-컴퓨팅-아키텍처-ec2-인스턴스-스토리지-요금-옵션">4장 AWS 컴퓨팅 아키텍처 (EC2, 인스턴스 스토리지, 요금 옵션)</a></li><li class="depth-0"><a href="#41-컴퓨팅-서비스-개요" data-for="41-컴퓨팅-서비스-개요">4.1 컴퓨팅 서비스 개요</a></li><li class="depth-0"><a href="#42-amazon-ec2-개요" data-for="42-amazon-ec2-개요">4.2 Amazon EC2 개요</a></li><li class="depth-0"><a href="#43-ec2의-주요-구성-요소" data-for="43-ec2의-주요-구성-요소">4.3 EC2의 주요 구성 요소</a></li><li class="depth-1"><a href="#431-ami" data-for="431-ami">4.3.1 AMI</a></li><li class="depth-1"><a href="#432-instance-type" data-for="432-instance-type">4.3.2 Instance Type</a></li><li class="depth-1"><a href="#433-key-pair" data-for="433-key-pair">4.3.3 Key Pair</a></li><li class="depth-1"><a href="#434-security-group" data-for="434-security-group">4.3.4 Security Group</a></li><li class="depth-1"><a href="#435-user-data" data-for="435-user-data">4.3.5 User Data</a></li><li class="depth-0"><a href="#44-ec2-인스턴스-타입-분류" data-for="44-ec2-인스턴스-타입-분류">4.4 EC2 인스턴스 타입 분류</a></li><li class="depth-1"><a href="#441-범용-인스턴스-general-purpose" data-for="441-범용-인스턴스-general-purpose">4.4.1 범용 인스턴스 (General Purpose)</a></li><li class="depth-1"><a href="#442-컴퓨팅-최적화-인스턴스-compute-optimized" data-for="442-컴퓨팅-최적화-인스턴스-compute-optimized">4.4.2 컴퓨팅 최적화 인스턴스 (Compute Optimized)</a></li><li class="depth-1"><a href="#443-메모리-최적화-인스턴스-memory-optimized" data-for="443-메모리-최적화-인스턴스-memory-optimized">4.4.3 메모리 최적화 인스턴스 (Memory Optimized)</a></li><li class="depth-1"><a href="#444-스토리지-최적화-인스턴스-storage-optimized" data-for="444-스토리지-최적화-인스턴스-storage-optimized">4.4.4 스토리지 최적화 인스턴스 (Storage Optimized)</a></li><li class="depth-0"><a href="#45-버스트-가능한-인스턴스" data-for="45-버스트-가능한-인스턴스">4.5 버스트 가능한 인스턴스</a></li><li class="depth-0"><a href="#46-ec2-스토리지-개요" data-for="46-ec2-스토리지-개요">4.6 EC2 스토리지 개요</a></li><li class="depth-0"><a href="#47-ebs-개요" data-for="47-ebs-개요">4.7 EBS 개요</a></li><li class="depth-1"><a href="#471-ebs-볼륨-유형" data-for="471-ebs-볼륨-유형">4.7.1 EBS 볼륨 유형</a></li><li class="depth-1"><a href="#472-ebs의-장점" data-for="472-ebs의-장점">4.7.2 EBS의 장점</a></li><li class="depth-0"><a href="#48-instance-store-개요" data-for="48-instance-store-개요">4.8 Instance Store 개요</a></li><li class="depth-1"><a href="#481-ebs와-instance-store-비교" data-for="481-ebs와-instance-store-비교">4.8.1 EBS와 Instance Store 비교</a></li><li class="depth-0"><a href="#49-ec2-네트워크와-ip-주소" data-for="49-ec2-네트워크와-ip-주소">4.9 EC2 네트워크와 IP 주소</a></li><li class="depth-1"><a href="#491-private-ip" data-for="491-private-ip">4.9.1 Private IP</a></li><li class="depth-1"><a href="#492-public-ip" data-for="492-public-ip">4.9.2 Public IP</a></li><li class="depth-1"><a href="#493-elastic-ip" data-for="493-elastic-ip">4.9.3 Elastic IP</a></li><li class="depth-0"><a href="#410-ec2-상태-변화" data-for="410-ec2-상태-변화">4.10 EC2 상태 변화</a></li><li class="depth-0"><a href="#411-ec2-요금-옵션" data-for="411-ec2-요금-옵션">4.11 EC2 요금 옵션</a></li><li class="depth-1"><a href="#4111-on-demand" data-for="4111-on-demand">4.11.1 On-Demand</a></li><li class="depth-1"><a href="#4112-reserved-instances" data-for="4112-reserved-instances">4.11.2 Reserved Instances</a></li><li class="depth-1"><a href="#4113-savings-plans" data-for="4113-savings-plans">4.11.3 Savings Plans</a></li><li class="depth-1"><a href="#4114-spot-instances" data-for="4114-spot-instances">4.11.4 Spot Instances</a></li><li class="depth-1"><a href="#4115-요금-옵션-비교" data-for="4115-요금-옵션-비교">4.11.5 요금 옵션 비교</a></li><li class="depth-0"><a href="#412-ec2-운영-시-고려사항" data-for="412-ec2-운영-시-고려사항">4.12 EC2 운영 시 고려사항</a></li><li class="depth-1"><a href="#4121-단일-ec2의-한계" data-for="4121-단일-ec2의-한계">4.12.1 단일 EC2의 한계</a></li><li class="depth-1"><a href="#4122-보안-고려사항" data-for="4122-보안-고려사항">4.12.2 보안 고려사항</a></li><li class="depth-1"><a href="#4123-비용-고려사항" data-for="4123-비용-고려사항">4.12.3 비용 고려사항</a></li><li class="depth-0"><a href="#413-실습--ec2-웹-서버-생성" data-for="413-실습--ec2-웹-서버-생성">4.13 실습 : EC2 웹 서버 생성</a></li><li class="depth-1"><a href="#4131-사전-준비" data-for="4131-사전-준비">4.13.1 사전 준비</a></li><li class="depth-1"><a href="#4132-보안-그룹-생성" data-for="4132-보안-그룹-생성">4.13.2 보안 그룹 생성</a></li><li class="depth-1"><a href="#4133-key-pair-생성" data-for="4133-key-pair-생성">4.13.3 Key Pair 생성</a></li><li class="depth-1"><a href="#4134-ec2-인스턴스-생성" data-for="4134-ec2-인스턴스-생성">4.13.4 EC2 인스턴스 생성</a></li><li class="depth-1"><a href="#4135-user-data-입력" data-for="4135-user-data-입력">4.13.5 User Data 입력</a></li><li class="depth-2"><a href="#명령어-설명" data-for="명령어-설명">명령어 설명</a></li><li class="depth-2"><a href="#binbash" data-for="binbash">#!/bin/bash</a></li><li class="depth-2"><a href="#dnf-update--y" data-for="dnf-update--y">dnf update -y</a></li><li class="depth-2"><a href="#dnf-install--y-httpd" data-for="dnf-install--y-httpd">dnf install -y httpd</a></li><li class="depth-2"><a href="#systemctl-enable-httpd" data-for="systemctl-enable-httpd">systemctl enable httpd</a></li><li class="depth-2"><a href="#systemctl-start-httpd" data-for="systemctl-start-httpd">systemctl start httpd</a></li><li class="depth-2"><a href="#echo-h1welcome-to-ec2-web-serverh1--varwwwhtmlindexhtml" data-for="echo-h1welcome-to-ec2-web-serverh1--varwwwhtmlindexhtml">echo &quot;&lt;h1>Welcome to EC2 Web Server&lt;/h1>&quot; > /var/www/html/index.html</a></li><li class="depth-1"><a href="#4136-접속-확인" data-for="4136-접속-확인">4.13.6 접속 확인</a></li><li class="depth-0"><a href="#414-실습--ssh-접속" data-for="414-실습--ssh-접속">4.14 실습 : SSH 접속</a></li><li class="depth-2"><a href="#명령어-설명-1" data-for="명령어-설명-1">명령어 설명</a></li><li class="depth-2"><a href="#ssh" data-for="ssh">ssh</a></li><li class="depth-2"><a href="#i-이니셜-keypem" data-for="i-이니셜-keypem">i 이니셜-key.pem</a></li><li class="depth-2"><a href="#ec2-user" data-for="ec2-user">ec2-user</a></li><li class="depth-2"><a href="#ec2-public-ip" data-for="ec2-public-ip">@&lt;EC2-Public-IP></a></li><li class="depth-1"><a href="#4141-웹-서버-동작-확인-명령" data-for="4141-웹-서버-동작-확인-명령">4.14.1 웹 서버 동작 확인 명령</a></li><li class="depth-0"><a href="#415-aws-cli로-ec2-조회-실습" data-for="415-aws-cli로-ec2-조회-실습">4.15 AWS CLI로 EC2 조회 실습</a></li><li class="depth-1"><a href="#4151-인스턴스-목록-조회" data-for="4151-인스턴스-목록-조회">4.15.1 인스턴스 목록 조회</a></li><li class="depth-1"><a href="#4152-실행-중인-인스턴스만-조회" data-for="4152-실행-중인-인스턴스만-조회">4.15.2 실행 중인 인스턴스만 조회</a></li><li class="depth-2"><a href="#명령어-설명-2" data-for="명령어-설명-2">명령어 설명</a></li><li class="depth-2"><a href="#--filters" data-for="--filters">--filters</a></li><li class="depth-2"><a href="#nameinstance-state-namevaluesrunning" data-for="nameinstance-state-namevaluesrunning">&quot;Name=instance-state-name,Values=running&quot;</a></li><li class="depth-1"><a href="#4153-특정-항목만-간단히-조회" data-for="4153-특정-항목만-간단히-조회">4.15.3 특정 항목만 간단히 조회</a></li><li class="depth-2"><a href="#명령어-설명-3" data-for="명령어-설명-3">명령어 설명</a></li><li class="depth-2"><a href="#--query" data-for="--query">--query</a></li><li class="depth-2"><a href="#reservationsinstances" data-for="reservationsinstances">Reservations[*].Instances[*]</a></li><li class="depth-2"><a href="#instanceidinstancetypeprivateipaddresspublicipaddressstatename" data-for="instanceidinstancetypeprivateipaddresspublicipaddressstatename">[InstanceId,InstanceType,PrivateIpAddress,PublicIpAddress,State.Name]</a></li><li class="depth-2"><a href="#--output-table" data-for="--output-table">--output table</a></li><li class="depth-0"><a href="#416-ec2-구매-옵션-설계-관점-정리" data-for="416-ec2-구매-옵션-설계-관점-정리">4.16 EC2 구매 옵션 설계 관점 정리</a></li><li class="depth-1"><a href="#4161-교육용--실습용-환경" data-for="4161-교육용--실습용-환경">4.16.1 교육용 / 실습용 환경</a></li><li class="depth-1"><a href="#4162-운영-웹-서버" data-for="4162-운영-웹-서버">4.16.2 운영 웹 서버</a></li><li class="depth-1"><a href="#4163-배치-처리--일시-작업" data-for="4163-배치-처리--일시-작업">4.16.3 배치 처리 / 일시 작업</a></li><li class="depth-0"><a href="#417-ec2-아키텍처-관점-핵심-정리" data-for="417-ec2-아키텍처-관점-핵심-정리">4.17 EC2 아키텍처 관점 핵심 정리</a></li><li class="depth-2"><a href="#1-ec2-한-대는-아키텍처가-아님" data-for="1-ec2-한-대는-아키텍처가-아님">1. EC2 한 대는 아키텍처가 아님</a></li><li class="depth-2"><a href="#2-스토리지를-구분해서-봐야-함" data-for="2-스토리지를-구분해서-봐야-함">2. 스토리지를 구분해서 봐야 함</a></li><li class="depth-2"><a href="#3-비용과-성능을-함께-고려해야-함" data-for="3-비용과-성능을-함께-고려해야-함">3. 비용과 성능을 함께 고려해야 함</a></li><li class="depth-2"><a href="#4-네트워크와-보안이-같이-따라와야-함" data-for="4-네트워크와-보안이-같이-따라와야-함">4. 네트워크와 보안이 같이 따라와야 함</a></li><li class="overflow-end"></li></ul></div><div class="backlinks"><h3>백링크</h3><ul id="list-2" class="overflow"><li><a href="../mgz/AWS-아키텍처-설계(ARC)" class="internal">AWS 아키텍처 설계(ARC)</a></li><li class="overflow-end"></li></ul></div></div><footer class><p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.2</a> © 2026</p><ul><li><a href="https://github.com/jackyzha0/quartz">GitHub</a></li><li><a href="https://discord.gg/cRFFHYye7t">Discord Community</a></li></ul></footer></div></div></body><script type="application/javascript" data-persist="true">function n(){let t=this.parentElement;t.classList.toggle("is-collapsed");let e=t.getElementsByClassName("callout-content")[0];if(!e)return;let l=t.classList.contains("is-collapsed");e.style.gridTemplateRows=l?"0fr":"1fr"}function c(){let t=document.getElementsByClassName("callout is-collapsible");for(let e of t){let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];if(!l||!s)continue;l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));let o=e.classList.contains("is-collapsed");s.style.gridTemplateRows=o?"0fr":"1fr"}}document.addEventListener("nav",c);
+</script><script type="module" data-persist="true">function E(a,e){if(!a)return;function t(o){o.target===this&&(o.preventDefault(),o.stopPropagation(),e())}function n(o){o.key.startsWith("Esc")&&(o.preventDefault(),e())}a?.addEventListener("click",t),window.addCleanup(()=>a?.removeEventListener("click",t)),document.addEventListener("keydown",n),window.addCleanup(()=>document.removeEventListener("keydown",n))}function f(a){for(;a.firstChild;)a.removeChild(a.firstChild)}var m=class{constructor(e,t){this.container=e;this.content=t;this.setupEventListeners(),this.setupNavigationControls(),this.resetTransform()}isDragging=!1;startPan={x:0,y:0};currentPan={x:0,y:0};scale=1;MIN_SCALE=.5;MAX_SCALE=3;cleanups=[];setupEventListeners(){let e=this.onMouseDown.bind(this),t=this.onMouseMove.bind(this),n=this.onMouseUp.bind(this),o=this.onTouchStart.bind(this),r=this.onTouchMove.bind(this),i=this.onTouchEnd.bind(this),s=this.resetTransform.bind(this);this.container.addEventListener("mousedown",e),document.addEventListener("mousemove",t),document.addEventListener("mouseup",n),this.container.addEventListener("touchstart",o,{passive:!1}),document.addEventListener("touchmove",r,{passive:!1}),document.addEventListener("touchend",i),window.addEventListener("resize",s),this.cleanups.push(()=>this.container.removeEventListener("mousedown",e),()=>document.removeEventListener("mousemove",t),()=>document.removeEventListener("mouseup",n),()=>this.container.removeEventListener("touchstart",o),()=>document.removeEventListener("touchmove",r),()=>document.removeEventListener("touchend",i),()=>window.removeEventListener("resize",s))}cleanup(){for(let e of this.cleanups)e()}setupNavigationControls(){let e=document.createElement("div");e.className="mermaid-controls";let t=this.createButton("+",()=>this.zoom(.1)),n=this.createButton("-",()=>this.zoom(-.1)),o=this.createButton("Reset",()=>this.resetTransform());e.appendChild(n),e.appendChild(o),e.appendChild(t),this.container.appendChild(e)}createButton(e,t){let n=document.createElement("button");return n.textContent=e,n.className="mermaid-control-button",n.addEventListener("click",t),window.addCleanup(()=>n.removeEventListener("click",t)),n}onMouseDown(e){e.button===0&&(this.isDragging=!0,this.startPan={x:e.clientX-this.currentPan.x,y:e.clientY-this.currentPan.y},this.container.style.cursor="grabbing")}onMouseMove(e){this.isDragging&&(e.preventDefault(),this.currentPan={x:e.clientX-this.startPan.x,y:e.clientY-this.startPan.y},this.updateTransform())}onMouseUp(){this.isDragging=!1,this.container.style.cursor="grab"}onTouchStart(e){if(e.touches.length!==1)return;this.isDragging=!0;let t=e.touches[0];this.startPan={x:t.clientX-this.currentPan.x,y:t.clientY-this.currentPan.y}}onTouchMove(e){if(!this.isDragging||e.touches.length!==1)return;e.preventDefault();let t=e.touches[0];this.currentPan={x:t.clientX-this.startPan.x,y:t.clientY-this.startPan.y},this.updateTransform()}onTouchEnd(){this.isDragging=!1}zoom(e){let t=Math.min(Math.max(this.scale+e,this.MIN_SCALE),this.MAX_SCALE),n=this.content.getBoundingClientRect(),o=n.width/2,r=n.height/2,i=t-this.scale;this.currentPan.x-=o*i,this.currentPan.y-=r*i,this.scale=t,this.updateTransform()}updateTransform(){this.content.style.transform=`translate(${this.currentPan.x}px, ${this.currentPan.y}px) scale(${this.scale})`}resetTransform(){let t=this.content.querySelector("svg").getBoundingClientRect(),n=t.width/this.scale,o=t.height/this.scale;this.scale=1,this.currentPan={x:(this.container.clientWidth-n)/2,y:(this.container.clientHeight-o)/2},this.updateTransform()}},T=["--secondary","--tertiary","--gray","--light","--lightgray","--highlight","--dark","--darkgray","--codeFont"],y;document.addEventListener("nav",async()=>{let e=document.querySelector(".center").querySelectorAll("code.mermaid");if(e.length===0)return;y||=await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.esm.min.mjs");let t=y.default,n=new WeakMap;for(let r of e)n.set(r,r.innerText);async function o(){for(let s of e){s.removeAttribute("data-processed");let c=n.get(s);c&&(s.innerHTML=c)}let r=T.reduce((s,c)=>(s[c]=window.getComputedStyle(document.documentElement).getPropertyValue(c),s),{}),i=document.documentElement.getAttribute("saved-theme")==="dark";t.initialize({startOnLoad:!1,securityLevel:"loose",theme:i?"dark":"base",themeVariables:{fontFamily:r["--codeFont"],primaryColor:r["--light"],primaryTextColor:r["--darkgray"],primaryBorderColor:r["--tertiary"],lineColor:r["--darkgray"],secondaryColor:r["--secondary"],tertiaryColor:r["--tertiary"],clusterBkg:r["--light"],edgeLabelBackground:r["--highlight"]}}),await t.run({nodes:e})}await o(),document.addEventListener("themechange",o),window.addCleanup(()=>document.removeEventListener("themechange",o));for(let r=0;r<e.length;r++){let v=function(){let g=l.querySelector("#mermaid-space"),h=l.querySelector(".mermaid-content");if(!h)return;f(h);let w=i.querySelector("svg").cloneNode(!0);h.appendChild(w),l.classList.add("active"),g.style.cursor="grab",u=new m(g,h)},M=function(){l.classList.remove("active"),u?.cleanup(),u=null},i=e[r],s=i.parentElement,c=s.querySelector(".clipboard-button"),d=s.querySelector(".expand-button"),p=window.getComputedStyle(c),L=c.offsetWidth+parseFloat(p.marginLeft||"0")+parseFloat(p.marginRight||"0");d.style.right=`calc(${L}px + 0.3rem)`,s.prepend(d);let l=s.querySelector("#mermaid-container");if(!l)return;let u=null;d.addEventListener("click",v),E(l,M),window.addCleanup(()=>{u?.cleanup(),d.removeEventListener("click",v)})}});
+</script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript" data-persist="true"></script><script src="../postscript.js" type="module" data-persist="true"></script></html>
